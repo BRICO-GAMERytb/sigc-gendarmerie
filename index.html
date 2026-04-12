@@ -1,0 +1,3302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGC — Système Intégré de Gestion de Compagnie</title>
+<style>
+  :root {
+    --navy-dark: #f4f6fa;
+    --navy-mid: #ffffff;
+    --navy-light: #eef1f7;
+    --navy-border: #d0d9e8;
+    --gold: #003189;
+    --gold-light: #1a4ab0;
+    --gold-dim: #8899cc;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --green: #1a7a4a;
+    --green-light: #27ae60;
+    --blue-accent: #2980b9;
+    --text-primary: #1a2340;
+    --text-secondary: #4a5a7a;
+    --text-dim: #8899bb;
+    --sidebar-w: 240px;
+    --header-h: 56px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--navy-dark);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ─── LOGIN ─── */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #dce6f7 0%, #f4f6fa 50%, #eaf0fb 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  #login-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,49,137,0.03) 40px, rgba(0,49,137,0.03) 41px),
+                repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,49,137,0.03) 40px, rgba(0,49,137,0.03) 41px);
+  }
+  .login-box {
+    background: #ffffff;
+    border: 1px solid var(--navy-border);
+    border-top: 4px solid var(--gold);
+    width: 420px;
+    padding: 40px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,49,137,0.12);
+  }
+  .login-logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .login-logo .shield {
+    font-size: 52px;
+    margin-bottom: 8px;
+  }
+  .login-logo h1 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .login-logo p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .login-divider {
+    border: none;
+    border-top: 1px solid var(--navy-border);
+    margin: 20px 0;
+  }
+  .login-field { margin-bottom: 16px; }
+  .login-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .login-field input {
+    width: 100%;
+    background: #f4f6fa;
+    border: 1px solid var(--navy-border);
+    color: var(--text-primary);
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-field input:focus { border-color: var(--gold); }
+  .login-btn {
+    width: 100%;
+    background: var(--gold);
+    color: var(--navy-dark);
+    border: none;
+    padding: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+  .login-btn:hover { background: var(--gold-light); }
+  .login-error {
+    background: rgba(192,57,43,0.15);
+    border: 1px solid var(--red);
+    color: #ff6b6b;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .login-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ─── MAIN APP ─── */
+  #app { display: none; height: 100vh; flex-direction: column; }
+  #app.visible { display: flex; }
+
+  /* HEADER */
+  #header {
+    height: var(--header-h);
+    background: var(--gold);
+    border-bottom: 3px solid #c9a84c;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    display: flex; align-items: center; gap: 10px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .header-logo span.badge {
+    background: #c9a84c;
+    color: #003189;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    letter-spacing: 1px;
+  }
+  .header-title {
+    flex: 1;
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 1px;
+  }
+  .header-clock {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #c9a84c;
+    letter-spacing: 2px;
+    background: rgba(0,0,0,0.2);
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .header-user {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+  }
+  .header-user .role-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border: 1px solid;
+    text-transform: uppercase;
+  }
+  .role-badge.admin { color: #ff6b6b; border-color: #ff6b6b; }
+  .role-badge.corg { color: #3498db; border-color: #3498db; }
+  .role-badge.pam { color: var(--gold); border-color: var(--gold); }
+  .role-badge.user { color: var(--green-light); border-color: var(--green-light); }
+  .header-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #ffffff;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .header-btn:hover { background: rgba(192,57,43,0.8); border-color: #e74c3c; color: #fff; }
+
+  /* BODY */
+  #body { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--navy-mid);
+    border-right: 1px solid var(--navy-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--navy-border);
+  }
+  .sidebar-section-title {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 8px 16px 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover { background: rgba(0,49,137,0.06); color: var(--text-primary); }
+  .nav-item.active {
+    background: rgba(0,49,137,0.1);
+    color: var(--gold);
+    border-left-color: var(--gold);
+    font-weight: 600;
+  }
+  .nav-item .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 2px;
+    min-width: 16px;
+    text-align: center;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    font-size: 10px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--navy-border);
+  }
+
+  /* MAIN CONTENT */
+  #main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    background: var(--navy-dark);
+  }
+
+  /* PAGE HEADER */
+  .page-header {
+    background: var(--navy-mid);
+    border-bottom: 1px solid var(--navy-border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .page-header h2 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .page-header .page-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .page-header-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* CONTENT AREA */
+  .content-area { padding: 20px 24px; }
+
+  /* CARDS */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-top: 2px solid;
+    padding: 16px;
+    position: relative;
+  }
+  .stat-card.gold { border-top-color: var(--gold); }
+  .stat-card.red { border-top-color: var(--red); }
+  .stat-card.green { border-top-color: var(--green-light); }
+  .stat-card.blue { border-top-color: var(--blue-accent); }
+  .stat-card .label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .stat-card .value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+  }
+  .stat-card .sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* TABLES */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .data-table th {
+    background: var(--navy-light);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--navy-border);
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(30,58,95,0.5);
+    color: var(--text-primary);
+    vertical-align: middle;
+  }
+  .data-table tr:hover td { background: rgba(0,49,137,0.04); }
+  .table-wrap {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .table-toolbar {
+    background: var(--navy-light);
+    border-bottom: 1px solid var(--navy-border);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .table-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    flex: 1;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--gold); color: var(--navy-dark); }
+  .btn-primary:hover { background: var(--gold-light); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: var(--red-light); }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: var(--green-light); }
+  .btn-outline {
+    background: none;
+    border: 1px solid var(--navy-border);
+    color: var(--text-secondary);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-blue { background: var(--blue-accent); color: white; }
+  .btn-blue:hover { background: #3498db; }
+  .btn-sm { padding: 4px 10px; font-size: 10px; }
+
+  /* STATUS BADGES */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+  .badge-green { color: var(--green-light); border-color: var(--green-light); background: rgba(39,174,96,0.1); }
+  .badge-red { color: #ff6b6b; border-color: #ff6b6b; background: rgba(192,57,43,0.1); }
+  .badge-gold { color: var(--gold); border-color: var(--gold); background: rgba(201,168,76,0.1); }
+  .badge-blue { color: #74b9ff; border-color: #74b9ff; background: rgba(41,128,185,0.1); }
+  .badge-gray { color: var(--text-dim); border-color: var(--text-dim); }
+
+  /* FORMS */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .form-grid-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    background: #f4f6fa;
+    border: 1px solid var(--navy-border);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--gold);
+  }
+  .form-group select option { background: #ffffff; color: var(--text-primary); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,20,60,0.45);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    display: none;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-top: 3px solid var(--gold);
+    width: 640px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0,49,137,0.18);
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--navy-border);
+    background: var(--navy-light);
+    gap: 12px;
+    position: sticky; top: 0;
+  }
+  .modal-header h3 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    flex: 1;
+    color: var(--text-primary);
+  }
+  .modal-close {
+    background: none; border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--red-light); }
+  .modal-body { padding: 20px; }
+  .modal-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid var(--navy-border);
+    background: var(--navy-light);
+  }
+
+  /* ALERT */
+  .alert {
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-bottom: 14px;
+    border-left: 3px solid;
+    display: none;
+  }
+  .alert.visible { display: block; }
+  .alert-success { background: rgba(26,122,74,0.15); border-color: var(--green-light); color: #6fcf97; }
+  .alert-error { background: rgba(192,57,43,0.15); border-color: var(--red); color: #ff6b6b; }
+  .alert-info { background: rgba(41,128,185,0.15); border-color: var(--blue-accent); color: #74b9ff; }
+  .alert-warn { background: rgba(201,168,76,0.1); border-color: var(--gold); color: var(--gold); }
+
+  /* DASHBOARD SPECIFIC */
+  .ops-ticker {
+    background: #eef1f7;
+    border: 1px solid var(--navy-border);
+    border-left: 3px solid var(--gold);
+    padding: 8px 12px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: var(--gold);
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+  }
+  .ops-ticker .ops-time { color: var(--text-dim); }
+
+  /* GAV SPECIFIC */
+  .gav-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-left: 4px solid var(--red);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .gav-card .gav-num {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--red-light);
+    min-width: 60px;
+  }
+  .gav-card .gav-info { flex: 1; }
+  .gav-card .gav-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .gav-card .gav-meta { font-size: 11px; color: var(--text-secondary); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f4f6fa; }
+  ::-webkit-scrollbar-thumb { background: #c8d0e0; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* SEPARATOR */
+  .sep { border: none; border-top: 1px solid var(--navy-border); margin: 16px 0; }
+
+  /* GRID 2COL */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* ACCESS DENIED */
+  .access-denied {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .access-denied .icon { font-size: 48px; margin-bottom: 16px; }
+  .access-denied h3 { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .access-denied p { font-size: 12px; }
+
+  /* NOTIFICATION BAR */
+  #notif-bar {
+    position: fixed;
+    top: 60px; right: 20px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .notif {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-left: 3px solid var(--gold);
+    padding: 10px 16px;
+    font-size: 12px;
+    max-width: 300px;
+    animation: slideIn 0.3s ease;
+    pointer-events: all;
+    box-shadow: 0 4px 20px rgba(0,49,137,0.12);
+  }
+  .notif.error { border-left-color: var(--red); }
+  .notif.success { border-left-color: var(--green-light); }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* TIMELINE */
+  .timeline { border-left: 2px solid var(--navy-border); padding-left: 20px; }
+  .timeline-item { position: relative; margin-bottom: 16px; }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -25px; top: 5px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px solid var(--navy-dark);
+  }
+  .timeline-item .tl-time { font-size: 10px; color: var(--text-dim); font-family: 'Courier New', monospace; margin-bottom: 2px; }
+  .timeline-item .tl-text { font-size: 12px; color: var(--text-primary); }
+  .timeline-item .tl-author { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* VACATION CARD */
+  .vac-slot {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .vac-slot:hover { border-color: var(--gold-dim); }
+  .vac-time {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: var(--gold);
+    min-width: 90px;
+  }
+  .vac-type { font-size: 12px; font-weight: 600; flex: 1; }
+  .vac-agents { font-size: 11px; color: var(--text-secondary); }
+
+  /* RESPONSIVE fixes */
+  .nowrap { white-space: nowrap; }
+  .mono { font-family: 'Courier New', monospace; }
+  .text-right { text-align: right; }
+  .flex { display: flex; align-items: center; gap: 8px; }
+  .spacer { flex: 1; }
+
+  /* PRINT */
+  @media print {
+    #login-screen, #header, #sidebar, #notif-bar { display: none !important; }
+    #main { overflow: visible; }
+    body, #app { height: auto; overflow: visible; }
+  }
+
+  /* Personnel disponibilité */
+  .dispo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .dispo-dot.present { background: var(--green-light); }
+  .dispo-dot.absent { background: var(--red); }
+  .dispo-dot.conge { background: var(--gold); }
+  .dispo-dot.garde { background: var(--blue-accent); }
+</style>
+<!-- ═══ FIREBASE SDK (module) ═══ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc,
+  onSnapshot, serverTimestamp, getDoc, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ═══════════════════════════════════════════════════
+//  🔧 CONFIGURATION FIREBASE
+//  Remplacez ces valeurs par celles de votre projet
+//  → console.firebase.google.com
+//  → Paramètres du projet → Vos applications → SDK web
+// ═══════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyAH6vv5l2_WVLPp5blzBUbadzU_mNchW-Y",
+  authDomain:        "sigc-gendarmerie.firebaseapp.com",
+  projectId:         "sigc-gendarmerie",
+  storageBucket:     "sigc-gendarmerie.firebasestorage.app",
+  messagingSenderId: "476956227576",
+  appId:             "1:476956227576:web:5e2d04e3ed8d87d54cc80d"
+};
+// ═══════════════════════════════════════════════════
+
+let _app, _db, _auth;
+window.FIREBASE_READY = false;
+
+try {
+  _app  = initializeApp(FIREBASE_CONFIG);
+  _db   = getFirestore(_app);
+  _auth = getAuth(_app);
+  window.FIREBASE_READY = (FIREBASE_CONFIG.apiKey !== "VOTRE_API_KEY");
+} catch(e) {
+  console.warn("[SIGC] Firebase non configuré:", e.message);
+}
+
+// Exposer les fonctions Firebase en global
+window.__FB = {
+  db:   () => _db,
+  auth: () => _auth,
+  col:  (name) => collection(_db, name),
+  docRef: (col, id) => doc(_db, col, String(id)),
+  fn: {
+    getDocs, setDoc, deleteDoc, onSnapshot,
+    serverTimestamp, getDoc, writeBatch, doc, collection,
+    signInWithEmailAndPassword, signOut, onAuthStateChanged
+  }
+};
+
+window.dispatchEvent(new Event("firebase-ready"));
+</script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="shield">
+        <svg width="70" height="70" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Bouclier bleu -->
+          <path d="M50 5 L90 20 L90 55 C90 75 70 92 50 98 C30 92 10 75 10 55 L10 20 Z" fill="#003189" stroke="#c9a84c" stroke-width="3"/>
+          <!-- Grenade dorée stylisée -->
+          <ellipse cx="50" cy="55" rx="14" ry="16" fill="#c9a84c"/>
+          <line x1="50" y1="39" x2="50" y2="30" stroke="#c9a84c" stroke-width="3"/>
+          <line x1="50" y1="30" x2="44" y2="24" stroke="#c9a84c" stroke-width="2.5"/>
+          <line x1="50" y1="30" x2="56" y2="24" stroke="#c9a84c" stroke-width="2.5"/>
+          <!-- Flammes -->
+          <ellipse cx="50" cy="26" rx="4" ry="5" fill="#c9a84c"/>
+          <!-- RF -->
+          <text x="50" y="61" text-anchor="middle" font-size="13" font-weight="bold" fill="#003189" font-family="serif">RF</text>
+        </svg>
+      </div>
+      <h1>Gendarmerie Nationale</h1>
+      <p>SYSTÈME INTÉGRÉ DE GESTION DE COMPAGNIE</p>
+    </div>
+    <hr class="login-divider">
+    <div class="login-error" id="login-error">Identifiants incorrects. Accès refusé.</div>
+    <div class="login-field">
+      <label>Identifiant SIGC ou Email Firebase</label>
+      <input type="text" id="login-user" placeholder="identifiant / email@domaine.fr" autocomplete="off" autofocus>
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-pass" placeholder="••••••••">
+    </div>
+    <button class="login-btn" onclick="doLogin()">🔐 &nbsp;CONNEXION SÉCURISÉE</button>
+    <div style="margin-top:10px;padding:8px 10px;background:#eef1f7;border:1px solid #d0d9e8;font-size:10px;color:#4a5a7a;text-align:center;line-height:1.6;">
+      🔥 Connexion Firebase : utilisez votre <strong>email</strong><br>
+      🔒 Connexion locale : utilisez votre <strong>identifiant SIGC</strong>
+    </div>
+    <div class="login-footer">
+      ACCÈS RÉSERVÉ AU PERSONNEL HABILITÉ<br>
+      TOUTE TENTATIVE D'INTRUSION EST SANCTIONNÉE
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APPLICATION
+═══════════════════════════════════════════ -->
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div class="header-logo">
+      <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 5 L90 20 L90 55 C90 75 70 92 50 98 C30 92 10 75 10 55 L10 20 Z" fill="#ffffff" stroke="#c9a84c" stroke-width="3"/>
+        <ellipse cx="50" cy="55" rx="14" ry="16" fill="#003189"/>
+        <line x1="50" y1="39" x2="50" y2="30" stroke="#003189" stroke-width="3"/>
+        <line x1="50" y1="30" x2="44" y2="24" stroke="#003189" stroke-width="2.5"/>
+        <line x1="50" y1="30" x2="56" y2="24" stroke="#003189" stroke-width="2.5"/>
+        <ellipse cx="50" cy="26" rx="4" ry="5" fill="#003189"/>
+        <text x="50" y="61" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff" font-family="serif">RF</text>
+      </svg>
+      <div>
+        <div><span class="badge">SIGC</span></div>
+      </div>
+      <span style="font-size:11px;color:rgba(255,255,255,0.75);font-weight:400">Gendarmerie Nationale</span>
+    </div>
+    <div class="header-title">
+      <span id="header-unit">Compagnie — SIGC v2.4</span>
+    </div>
+    <div class="header-clock" id="clock">00:00:00</div>
+    <div id="firebase-status" style="font-size:10px;letter-spacing:1px;padding:3px 8px;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);">⏳ Initialisation...</div>
+    <div class="header-user">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#fff" id="header-name">—</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.65)" id="header-grade">—</div>
+      </div>
+      <span class="role-badge" id="header-role-badge">—</span>
+    </div>
+    <button class="header-btn" onclick="doLogout()">⏻ DÉCONNEXION</button>
+  </div>
+
+  <!-- BODY -->
+  <div id="body">
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Tableau de bord</div>
+        <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard">
+          <span class="nav-icon">📊</span> Tableau de bord
+        </div>
+        <div class="nav-item" onclick="showView('main-courante')" id="nav-main-courante">
+          <span class="nav-icon">📋</span> Main courante
+          <span class="nav-badge" id="badge-mc">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Opérations</div>
+        <div class="nav-item" onclick="showView('vacations')" id="nav-vacations">
+          <span class="nav-icon">🕐</span> Vacations
+        </div>
+        <div class="nav-item" onclick="showView('affectations')" id="nav-affectations">
+          <span class="nav-icon">📌</span> Affectations
+        </div>
+        <div class="nav-item" onclick="showView('interventions')" id="nav-interventions">
+          <span class="nav-icon">🚨</span> Interventions
+          <span class="nav-badge" id="badge-int">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Procédures</div>
+        <div class="nav-item" onclick="showView('gav')" id="nav-gav">
+          <span class="nav-icon">🔒</span> Garde à vue
+          <span class="nav-badge" id="badge-gav">0</span>
+        </div>
+        <div class="nav-item" onclick="showView('pv')" id="nav-pv">
+          <span class="nav-icon">📄</span> Procédures / PV
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Ressources</div>
+        <div class="nav-item" onclick="showView('personnel')" id="nav-personnel">
+          <span class="nav-icon">👤</span> Personnel
+        </div>
+        <div class="nav-item" onclick="showView('vehicules')" id="nav-vehicules">
+          <span class="nav-icon">🚔</span> Véhicules
+        </div>
+      </div>
+
+      <div class="sidebar-section" id="admin-section">
+        <div class="sidebar-section-title">Administration</div>
+        <div class="nav-item" onclick="showView('admin-users')" id="nav-admin-users">
+          <span class="nav-icon">⚙️</span> Gestion comptes
+        </div>
+        <div class="nav-item" onclick="showView('admin-logs')" id="nav-admin-logs">
+          <span class="nav-icon">🗂️</span> Journal système
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div>SIGC — Version 2.4.1</div>
+        <div style="margin-top:2px;color:var(--text-dim)">© Gendarmerie Nationale</div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main">
+
+      <!-- ═══ DASHBOARD ═══ -->
+      <div id="view-dashboard" class="view active">
+        <div class="page-header">
+          <div>
+            <h2>📊 Tableau de bord</h2>
+            <div class="page-sub">Vue d'ensemble opérationnelle — <span id="dash-date"></span></div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-outline btn-sm" onclick="refreshDashboard()">↺ Actualiser</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="stat-grid">
+            <div class="stat-card gold">
+              <div class="label">Personnel présent</div>
+              <div class="value" id="stat-present">—</div>
+              <div class="sub">Militaires en service</div>
+            </div>
+            <div class="stat-card red">
+              <div class="label">Gardes à vue</div>
+              <div class="value" id="stat-gav">—</div>
+              <div class="sub">En cours</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="label">Vacations actives</div>
+              <div class="value" id="stat-vac">—</div>
+              <div class="sub">Patrouilles / Services</div>
+            </div>
+            <div class="stat-card green">
+              <div class="label">Interventions</div>
+              <div class="value" id="stat-int">—</div>
+              <div class="sub">Aujourd'hui</div>
+            </div>
+            <div class="stat-card gold">
+              <div class="label">Véhicules dispos</div>
+              <div class="value" id="stat-vh">—</div>
+              <div class="sub">En parc</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="label">Procédures ouvertes</div>
+              <div class="value" id="stat-pv">—</div>
+              <div class="sub">En cours</div>
+            </div>
+          </div>
+
+          <!-- Main courante récente -->
+          <div class="table-wrap">
+            <div class="table-toolbar">
+              <span class="table-title">📋 Main courante — Événements récents</span>
+              <button class="btn btn-outline btn-sm" onclick="showView('main-courante')">Voir tout →</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Heure</th>
+                  <th>Type</th>
+                  <th>Lieu</th>
+                  <th>Description</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody id="dash-mc-tbody">
+                <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px;">Aucun événement enregistré</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="grid-2">
+            <!-- GAV en cours -->
+            <div class="table-wrap">
+              <div class="table-toolbar">
+                <span class="table-title">🔒 Gardes à vue en cours</span>
+                <button class="btn btn-outline btn-sm" onclick="showView('gav')">→</button>
+              </div>
+              <div id="dash-gav-list" style="padding:12px;">
+                <span style="font-size:12px;color:var(--text-dim)">Aucune garde à vue en cours</span>
+              </div>
+            </div>
+            <!-- Vacations actives -->
+            <div class="table-wrap">
+              <div class="table-toolbar">
+                <span class="table-title">🕐 Vacations du jour</span>
+                <button class="btn btn-outline btn-sm" onclick="showView('vacations')">→</button>
+              </div>
+              <div id="dash-vac-list" style="padding:12px;">
+                <span style="font-size:12px;color:var(--text-dim)">Aucune vacation planifiée</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MAIN COURANTE ═══ -->
+      <div id="view-main-courante" class="view">
+        <div class="page-header">
+          <div>
+            <h2>📋 Main Courante</h2>
+            <div class="page-sub">Journal chronologique des événements</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-primary" onclick="openModal('modal-mc')">+ Nouvel événement</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <input type="text" id="mc-search" placeholder="🔍 Rechercher..." style="background:#f4f6fa;border:1px solid var(--navy-border);color:var(--text-primary);padding:7px 12px;font-size:12px;outline:none;width:220px;" oninput="filterMC()">
+            <select id="mc-filter-type" style="background:#f4f6fa;border:1px solid var(--navy-border);color:var(--text-primary);padding:7px 10px;font-size:12px;outline:none;" onchange="filterMC()">
+              <option value="">Tous les types</option>
+              <option value="INTERVENTION">Intervention</option>
+              <option value="INFORMATION">Information</option>
+              <option value="ARRESTATION">Arrestation</option>
+              <option value="ACCIDENT">Accident</option>
+              <option value="SIGNALEMENT">Signalement</option>
+              <option value="AUTRE">Autre</option>
+            </select>
+            <select id="mc-filter-statut" style="background:#f4f6fa;border:1px solid var(--navy-border);color:var(--text-primary);padding:7px 10px;font-size:12px;outline:none;" onchange="filterMC()">
+              <option value="">Tous les statuts</option>
+              <option value="EN COURS">En cours</option>
+              <option value="CLOS">Clos</option>
+              <option value="TRANSMIS">Transmis</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N° MC</th>
+                  <th>Date / Heure</th>
+                  <th>Type</th>
+                  <th>Lieu</th>
+                  <th>Description</th>
+                  <th>Militaires</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="mc-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ VACATIONS ═══ -->
+      <div id="view-vacations" class="view">
+        <div class="page-header">
+          <div>
+            <h2>🕐 Vacations</h2>
+            <div class="page-sub">Planification des services et patrouilles</div>
+          </div>
+          <div class="page-header-actions">
+            <input type="date" id="vac-date-filter" style="background:#f4f6fa;border:1px solid var(--navy-border);color:var(--text-primary);padding:6px 10px;font-size:12px;outline:none;" onchange="renderVacations()">
+            <button class="btn btn-primary" onclick="openModal('modal-vacation')">+ Nouvelle vacation</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="grid-3" style="margin-bottom:16px;">
+            <div class="stat-card gold"><div class="label">Service jour</div><div class="value" id="vstat-jour">0</div></div>
+            <div class="stat-card blue"><div class="label">Service nuit</div><div class="value" id="vstat-nuit">0</div></div>
+            <div class="stat-card green"><div class="label">Patrouille</div><div class="value" id="vstat-patr">0</div></div>
+          </div>
+          <div id="vac-list"></div>
+        </div>
+      </div>
+
+      <!-- ═══ AFFECTATIONS ═══ -->
+      <div id="view-affectations" class="view">
+        <div class="page-header">
+          <div>
+            <h2>📌 Affectations</h2>
+            <div class="page-sub">Gestion des affectations et missions du personnel</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-primary" onclick="openModal('modal-affectation')">+ Nouvelle affectation</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="table-wrap">
+            <div class="table-toolbar">
+              <span class="table-title">Liste des affectations</span>
+              <input type="text" placeholder="🔍 Filtrer..." id="aff-search" style="background:#f4f6fa;border:1px solid var(--navy-border);color:var(--text-primary);padding:5px 10px;font-size:11px;outline:none;width:180px;" oninput="renderAffectations()">
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Grade / Nom</th>
+                  <th>Unité d'affectation</th>
+                  <th>Poste / Fonction</th>
+                  <th>Type</th>
+                  <th>Date début</th>
+                  <th>Date fin</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="aff-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ INTERVENTIONS ═══ -->
+      <div id="view-interventions" class="view">
+        <div class="page-header">
+          <div>
+            <h2>🚨 Interventions</h2>
+            <div class="page-sub">Gestion des interventions en cours et passées</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-danger" onclick="openModal('modal-intervention')">🚨 Nouvelle intervention</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="table-wrap">
+            <div class="table-toolbar"><span class="table-title">Interventions du jour</span></div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Heure appel</th>
+                  <th>Nature</th>
+                  <th>Adresse</th>
+                  <th>Patrouille engagée</th>
+                  <th>Heure arrivée</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="int-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ GARDE A VUE ═══ -->
+      <div id="view-gav" class="view">
+        <div class="page-header">
+          <div>
+            <h2>🔒 Garde à vue</h2>
+            <div class="page-sub">Gestion des personnes placées en garde à vue</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-danger" onclick="openModal('modal-gav')">+ Placement en GAV</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="stat-grid">
+            <div class="stat-card red"><div class="label">GAV en cours</div><div class="value" id="gstat-cours">0</div></div>
+            <div class="stat-card gold"><div class="label">Prolongées</div><div class="value" id="gstat-prol">0</div></div>
+            <div class="stat-card green"><div class="label">Levées aujourd'hui</div><div class="value" id="gstat-lev">0</div></div>
+          </div>
+          <div id="gav-list"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PROCEDURES / PV ═══ -->
+      <div id="view-pv" class="view">
+        <div class="page-header">
+          <div>
+            <h2>📄 Procédures / PV</h2>
+            <div class="page-sub">Suivi des procédures judiciaires et procès-verbaux</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-primary" onclick="openModal('modal-pv')">+ Nouvelle procédure</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="table-wrap">
+            <div class="table-toolbar"><span class="table-title">Procédures en cours</span></div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N° Procédure</th>
+                  <th>Date</th>
+                  <th>Nature</th>
+                  <th>Mis en cause</th>
+                  <th>OPJ Rédacteur</th>
+                  <th>Parquet</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PERSONNEL ═══ -->
+      <div id="view-personnel" class="view">
+        <div class="page-header">
+          <div>
+            <h2>👤 Personnel</h2>
+            <div class="page-sub">Gestion des militaires de la compagnie</div>
+          </div>
+          <div class="page-header-actions">
+            <input type="text" placeholder="🔍 Rechercher..." id="pers-search" style="background:#f4f6fa;border:1px solid var(--navy-border);color:var(--text-primary);padding:6px 12px;font-size:12px;outline:none;width:200px;" oninput="renderPersonnel()">
+            <button class="btn btn-primary" id="btn-add-pers" onclick="openModal('modal-personnel')">+ Ajouter militaire</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="stat-grid">
+            <div class="stat-card gold"><div class="label">Effectif total</div><div class="value" id="pstat-total">0</div></div>
+            <div class="stat-card green"><div class="label">Présents</div><div class="value" id="pstat-pres">0</div></div>
+            <div class="stat-card gold"><div class="label">En congé</div><div class="value" id="pstat-conge">0</div></div>
+            <div class="stat-card red"><div class="label">Absents / Arrêt</div><div class="value" id="pstat-abs">0</div></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Matricule</th>
+                  <th>Grade</th>
+                  <th>Nom / Prénom</th>
+                  <th>Unité</th>
+                  <th>Fonction</th>
+                  <th>Qualification</th>
+                  <th>Disponibilité</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ VEHICULES ═══ -->
+      <div id="view-vehicules" class="view">
+        <div class="page-header">
+          <div>
+            <h2>🚔 Véhicules</h2>
+            <div class="page-sub">Parc automobile de la compagnie</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-primary" onclick="openModal('modal-vehicule')">+ Ajouter véhicule</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Immatriculation</th>
+                  <th>Modèle</th>
+                  <th>Type</th>
+                  <th>Affecté à</th>
+                  <th>Kilométrage</th>
+                  <th>Prochain CT</th>
+                  <th>État</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="vh-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ADMIN USERS ═══ -->
+      <div id="view-admin-users" class="view">
+        <div class="page-header">
+          <div>
+            <h2>⚙️ Gestion des comptes</h2>
+            <div class="page-sub">Administration des accès au système SIGC</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-primary" onclick="openModal('modal-user')">+ Créer un compte</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div id="admin-access-check" class="access-denied" style="display:none;">
+            <div class="icon">🔒</div>
+            <h3>Accès restreint</h3>
+            <p>Cette section est réservée aux administrateurs système.</p>
+          </div>
+          <div id="admin-users-content">
+            <div class="table-wrap">
+              <div class="table-toolbar">
+                <span class="table-title">Comptes utilisateurs du système</span>
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Identifiant</th>
+                    <th>Grade / Nom</th>
+                    <th>Rôle</th>
+                    <th>Unité</th>
+                    <th>Dernier accès</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ADMIN LOGS ═══ -->
+      <div id="view-admin-logs" class="view">
+        <div class="page-header">
+          <div>
+            <h2>🗂️ Journal système</h2>
+            <div class="page-sub">Historique des connexions et actions</div>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑 Vider les journaux</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Horodatage</th>
+                  <th>Utilisateur</th>
+                  <th>Action</th>
+                  <th>Détails</th>
+                  <th>IP simulée</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════ -->
+
+<!-- MODAL: Nouvel événement MC -->
+<div class="modal-overlay" id="modal-mc">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📋 Nouvel événement — Main courante</h3>
+      <button class="modal-close" onclick="closeModal('modal-mc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Type d'événement</label>
+          <select id="mc-type">
+            <option>INTERVENTION</option>
+            <option>INFORMATION</option>
+            <option>ARRESTATION</option>
+            <option>ACCIDENT</option>
+            <option>SIGNALEMENT</option>
+            <option>AUTRE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Heure</label>
+          <input type="time" id="mc-heure">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Lieu / Adresse</label>
+          <input type="text" id="mc-lieu" placeholder="Adresse, lieu-dit, commune...">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Description de l'événement</label>
+          <textarea id="mc-desc" placeholder="Détails de l'événement..."></textarea>
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Militaires engagés</label>
+          <input type="text" id="mc-militaires" placeholder="Ex: ADJ MARTIN, GND DUPONT...">
+        </div>
+        <div class="form-group">
+          <label>Statut</label>
+          <select id="mc-statut">
+            <option>EN COURS</option>
+            <option>CLOS</option>
+            <option>TRANSMIS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>N° de procédure (si applicable)</label>
+          <input type="text" id="mc-proc" placeholder="N° PV...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-mc')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMC()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nouvelle vacation -->
+<div class="modal-overlay" id="modal-vacation">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🕐 Nouvelle vacation</h3>
+      <button class="modal-close" onclick="closeModal('modal-vacation')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Type de service</label>
+          <select id="vac-type">
+            <option>SERVICE JOUR</option>
+            <option>SERVICE NUIT</option>
+            <option>PATROUILLE</option>
+            <option>PERMANENCE</option>
+            <option>ESCORTE</option>
+            <option>MISSION SPÉCIALE</option>
+            <option>BRIGADE MOTORISÉE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="vac-date">
+        </div>
+        <div class="form-group">
+          <label>Heure de prise de service</label>
+          <input type="time" id="vac-hdebut">
+        </div>
+        <div class="form-group">
+          <label>Heure de fin de service</label>
+          <input type="time" id="vac-hfin">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Militaires affectés à la vacation</label>
+          <textarea id="vac-militaires" placeholder="Ex: ADJ MARTIN (chef de bord), GND DUPONT, GND LEFEBVRE..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Véhicule</label>
+          <select id="vac-vh">
+            <option value="">-- Aucun --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Zone de patrouille / Mission</label>
+          <input type="text" id="vac-zone" placeholder="Secteur, commune...">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Instructions / Consignes particulières</label>
+          <textarea id="vac-notes" placeholder="Consignes, priorités de surveillance..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-vacation')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveVacation()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nouvelle affectation -->
+<div class="modal-overlay" id="modal-affectation">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📌 Nouvelle affectation</h3>
+      <button class="modal-close" onclick="closeModal('modal-affectation')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Grade</label>
+          <select id="aff-grade">
+            <option>GND</option><option>GND-CH</option><option>MAR-LOG</option><option>ADJ</option>
+            <option>ADJ-CH</option><option>LTN</option><option>CNE</option><option>CDT</option>
+            <option>LCL</option><option>COL</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="aff-nom" placeholder="NOM">
+        </div>
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" id="aff-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Unité d'affectation</label>
+          <input type="text" id="aff-unite" placeholder="Brigade / Escadron / Compagnie...">
+        </div>
+        <div class="form-group">
+          <label>Poste / Fonction</label>
+          <input type="text" id="aff-poste" placeholder="Chef de brigade, OPJ...">
+        </div>
+        <div class="form-group">
+          <label>Type d'affectation</label>
+          <select id="aff-type">
+            <option>PERMANENTE</option>
+            <option>TEMPORAIRE</option>
+            <option>MISSION</option>
+            <option>STAGE</option>
+            <option>DÉTACHEMENT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date de début</label>
+          <input type="date" id="aff-ddebut">
+        </div>
+        <div class="form-group">
+          <label>Date de fin (si temporaire)</label>
+          <input type="date" id="aff-dfin">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Observations</label>
+          <textarea id="aff-obs" placeholder="Observations complémentaires..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-affectation')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveAffectation()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Intervention -->
+<div class="modal-overlay" id="modal-intervention">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🚨 Nouvelle intervention</h3>
+      <button class="modal-close" onclick="closeModal('modal-intervention')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nature de l'intervention</label>
+          <select id="int-nature">
+            <option>VIOLENCE</option><option>CAMBRIOLAGE</option><option>ACCIDENT DE LA ROUTE</option>
+            <option>TROUBLE À L'ORDRE PUBLIC</option><option>INCENDIE</option><option>PERSONNE EN DANGER</option>
+            <option>FUGUE / DISPARITION</option><option>STUPÉFIANTS</option><option>AUTRE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Heure d'appel</label>
+          <input type="time" id="int-heure">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Adresse / Lieu</label>
+          <input type="text" id="int-adresse" placeholder="Adresse complète...">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Patrouille engagée</label>
+          <input type="text" id="int-patrouille" placeholder="Ex: PAT-01 — ADJ MARTIN, GND DUPONT">
+        </div>
+        <div class="form-group">
+          <label>Heure d'arrivée sur place</label>
+          <input type="time" id="int-arrivee">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Compte-rendu d'intervention</label>
+          <textarea id="int-cr" placeholder="Résumé de l'intervention..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-intervention')">Annuler</button>
+      <button class="btn btn-danger" onclick="saveIntervention()">🚨 Engager</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Garde à vue -->
+<div class="modal-overlay" id="modal-gav">
+  <div class="modal" style="width:700px;">
+    <div class="modal-header">
+      <h3>🔒 Placement en garde à vue</h3>
+      <button class="modal-close" onclick="closeModal('modal-gav')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(192,57,43,0.1);border:1px solid var(--red);padding:10px 14px;font-size:11px;color:#ff6b6b;margin-bottom:16px;">
+        ⚠️ Le placement en garde à vue doit être notifié immédiatement à l'OPJ responsable et au parquet. La personne doit être informée de ses droits.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="gav-nom" placeholder="NOM DE NAISSANCE">
+        </div>
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" id="gav-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Date de naissance</label>
+          <input type="date" id="gav-ddn">
+        </div>
+        <div class="form-group">
+          <label>Lieu de naissance</label>
+          <input type="text" id="gav-lbn" placeholder="Commune, pays...">
+        </div>
+        <div class="form-group">
+          <label>Nationalité</label>
+          <input type="text" id="gav-nat" placeholder="Française" value="Française">
+        </div>
+        <div class="form-group">
+          <label>Domicile</label>
+          <input type="text" id="gav-dom" placeholder="Adresse complète">
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Motif du placement en garde à vue</label>
+          <textarea id="gav-motif" placeholder="Motif légal, faits reprochés..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Date et heure du placement</label>
+          <input type="datetime-local" id="gav-date">
+        </div>
+        <div class="form-group">
+          <label>OPJ responsable</label>
+          <input type="text" id="gav-opj" placeholder="Grade NOM">
+        </div>
+        <div class="form-group">
+          <label>Avocat demandé</label>
+          <select id="gav-avocat">
+            <option value="NON">Non</option>
+            <option value="OUI">Oui</option>
+            <option value="COMMIS D'OFFICE">Commis d'office</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Médecin requis</label>
+          <select id="gav-medecin">
+            <option value="NON">Non</option>
+            <option value="OUI - EN ATTENTE">Oui — En attente</option>
+            <option value="OUI - EFFECTUÉE">Oui — Effectuée</option>
+          </select>
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Effets personnels / Objets saisis</label>
+          <textarea id="gav-effets" placeholder="Liste des effets personnels déposés..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-gav')">Annuler</button>
+      <button class="btn btn-danger" onclick="saveGAV()">🔒 Confirmer le placement</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Procédure / PV -->
+<div class="modal-overlay" id="modal-pv">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📄 Nouvelle procédure</h3>
+      <button class="modal-close" onclick="closeModal('modal-pv')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nature de l'infraction</label>
+          <select id="pv-nature">
+            <option>VIOLENCE VOLONTAIRE</option><option>CAMBRIOLAGE</option><option>VOL</option>
+            <option>STUPÉFIANTS</option><option>CONDUITE SOUS INFLUENCE</option><option>ESCROQUERIE</option>
+            <option>HOMICIDE</option><option>AGRESSION SEXUELLE</option><option>AUTRE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date des faits</label>
+          <input type="date" id="pv-date">
+        </div>
+        <div class="form-group">
+          <label>Mis en cause</label>
+          <input type="text" id="pv-mic" placeholder="NOM Prénom">
+        </div>
+        <div class="form-group">
+          <label>Victime(s)</label>
+          <input type="text" id="pv-vic" placeholder="NOM Prénom">
+        </div>
+        <div class="form-group">
+          <label>OPJ rédacteur</label>
+          <input type="text" id="pv-opj" placeholder="Grade NOM">
+        </div>
+        <div class="form-group">
+          <label>Parquet</label>
+          <select id="pv-parquet">
+            <option>TJ — Tribunal Judiciaire</option>
+            <option>PARQUET — Classement sans suite</option>
+            <option>PARQUET — Rappel à la loi</option>
+            <option>JUGE D'INSTRUCTION</option>
+          </select>
+        </div>
+        <div class="form-group form-grid-full">
+          <label>Résumé des faits</label>
+          <textarea id="pv-faits" placeholder="Description succincte des faits..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-pv')">Annuler</button>
+      <button class="btn btn-primary" onclick="savePV()">✓ Ouvrir la procédure</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Personnel -->
+<div class="modal-overlay" id="modal-personnel">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>👤 Ajouter un militaire</h3>
+      <button class="modal-close" onclick="closeModal('modal-personnel')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Matricule</label>
+          <input type="text" id="pers-mat" placeholder="Ex: 2024-047">
+        </div>
+        <div class="form-group">
+          <label>Grade</label>
+          <select id="pers-grade">
+            <option>GND</option><option>GND-CH</option><option>MAR-LOG</option><option>ADJ</option>
+            <option>ADJ-CH</option><option>LTN</option><option>CNE</option><option>CDT</option>
+            <option>LCL</option><option>COL</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="pers-nom" placeholder="NOM">
+        </div>
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" id="pers-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Unité</label>
+          <input type="text" id="pers-unite" placeholder="Brigade, Escadron...">
+        </div>
+        <div class="form-group">
+          <label>Fonction</label>
+          <input type="text" id="pers-fonction" placeholder="Chef de brigade, OPJ...">
+        </div>
+        <div class="form-group">
+          <label>Qualification</label>
+          <select id="pers-qual">
+            <option>OPJ</option><option>APJ</option><option>APJa</option><option>OPJ / APJ</option>
+            <option>MOTARD</option><option>PLONGEUR</option><option>NAGEUR DE COMBAT</option>
+            <option>CHIEN</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Disponibilité</label>
+          <select id="pers-dispo">
+            <option value="PRÉSENT">Présent</option>
+            <option value="CONGÉ">En congé</option>
+            <option value="ABSENT">Absent</option>
+            <option value="GARDE">En service</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-personnel')">Annuler</button>
+      <button class="btn btn-primary" onclick="savePersonnel()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Véhicule -->
+<div class="modal-overlay" id="modal-vehicule">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🚔 Ajouter un véhicule</h3>
+      <button class="modal-close" onclick="closeModal('modal-vehicule')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Immatriculation</label>
+          <input type="text" id="vh-immat" placeholder="AA-123-BB">
+        </div>
+        <div class="form-group">
+          <label>Modèle</label>
+          <input type="text" id="vh-modele" placeholder="Peugeot 3008, Renault Duster...">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="vh-type">
+            <option>VTU</option><option>VPS</option><option>MOTO</option><option>FOURGON</option>
+            <option>CELULAIRE</option><option>4X4</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Affecté à</label>
+          <input type="text" id="vh-affecte" placeholder="Brigade / Unité">
+        </div>
+        <div class="form-group">
+          <label>Kilométrage</label>
+          <input type="number" id="vh-km" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Prochain contrôle technique</label>
+          <input type="date" id="vh-ct">
+        </div>
+        <div class="form-group">
+          <label>État</label>
+          <select id="vh-etat">
+            <option>DISPONIBLE</option><option>EN SERVICE</option><option>EN MAINTENANCE</option>
+            <option>HORS SERVICE</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-vehicule')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveVehicule()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Compte utilisateur -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙️ Créer un compte utilisateur</h3>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Identifiant de connexion</label>
+          <input type="text" id="u-login" placeholder="identifiant">
+        </div>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="u-pass" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Grade</label>
+          <select id="u-grade">
+            <option>GND</option><option>GND-CH</option><option>MAR-LOG</option><option>ADJ</option>
+            <option>ADJ-CH</option><option>LTN</option><option>CNE</option><option>CDT</option>
+            <option>LCL</option><option>COL</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="u-nom" placeholder="NOM">
+        </div>
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" id="u-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Rôle système</label>
+          <select id="u-role">
+            <option value="user">Utilisateur standard</option>
+            <option value="pam">PAM — Chef de groupe</option>
+            <option value="corg">CORG — Centre opérationnel</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Unité</label>
+          <input type="text" id="u-unite" placeholder="Brigade / Compagnie...">
+        </div>
+        <div class="form-group">
+          <label>Statut du compte</label>
+          <select id="u-statut">
+            <option value="ACTIF">Actif</option>
+            <option value="SUSPENDU">Suspendu</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-user')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveUser()">✓ Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GAV Detail / Levée -->
+<div class="modal-overlay" id="modal-gav-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔒 Détail garde à vue</h3>
+      <button class="modal-close" onclick="closeModal('modal-gav-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="gav-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-gav-detail')">Fermer</button>
+      <button class="btn btn-success" id="btn-lev-gav" onclick="leveeGAV()">✓ Lever la garde à vue</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION BAR -->
+<div id="notif-bar"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  FIREBASE STATUS INDICATOR (affiché dans le header)
+// ═══════════════════════════════════════════
+window.addEventListener('firebase-ready', () => {
+  const ind = document.getElementById('firebase-status');
+  if (ind) {
+    if (window.FIREBASE_READY) {
+      ind.innerHTML = '<span style="color:#27ae60;font-size:10px;letter-spacing:1px;">🔥 FIREBASE CONNECTÉ</span>';
+    } else {
+      ind.innerHTML = '<span style="color:#e67e22;font-size:10px;letter-spacing:1px;">⚠️ MODE LOCAL (config Firebase manquante)</span>';
+    }
+  }
+});
+
+// ═══════════════════════════════════════════
+//  DATA STORE — COUCHE D'ABSTRACTION
+//  Fonctionne en localStorage si Firebase n'est
+//  pas configuré, ou en Firestore en temps réel
+//  si Firebase est actif.
+// ═══════════════════════════════════════════
+
+// Cache local (miroir mémoire des collections Firestore)
+const _cache = {};
+
+const LS = {
+  // ── Lecture depuis le cache mémoire (toujours synchrone) ──
+  get: k => {
+    if (_cache[k] !== undefined) return _cache[k];
+    try { return JSON.parse(localStorage.getItem('sigc_'+k)) || null; } catch { return null; }
+  },
+  // ── Écriture : localStorage + Firestore si dispo ──
+  set: (k, v) => {
+    _cache[k] = v;
+    localStorage.setItem('sigc_'+k, JSON.stringify(v));
+    if (window.FIREBASE_READY) FB.writeCollection(k, v);
+  }
+};
+
+// ═══════════════════════════════════════════
+//  FIREBASE — COUCHE FIRESTORE
+// ═══════════════════════════════════════════
+const FB = {
+
+  // Collections Firestore correspondant aux clés SIGC
+  // Chaque clé = une collection Firestore de documents
+  COLLECTIONS: {
+    'users':         'sigc_users',
+    'mc':            'sigc_mc',
+    'interventions': 'sigc_interventions',
+    'gav':           'sigc_gav',
+    'pv':            'sigc_pv',
+    'vehicules':     'sigc_vehicules',
+    'personnel':     'sigc_personnel',
+    'vacations':     'sigc_vacations',
+    'affectations':  'sigc_affectations',
+    'logs':          'sigc_logs',
+    'idcounters':    'sigc_meta',
+  },
+
+  // ── Écrire un tableau complet dans une collection Firestore ──
+  // Stratégie : chaque élément du tableau = un document Firestore (id = item.id)
+  // Pour les objets simples (idcounters), on les stocke dans un doc "counters"
+  async writeCollection(key, data) {
+    if (!window.FIREBASE_READY) return;
+    const fb = window.__FB;
+    const colName = FB.COLLECTIONS[key];
+    if (!colName) return;
+    const { setDoc, doc, writeBatch } = fb.fn;
+    const db = fb.db();
+    try {
+      if (!Array.isArray(data)) {
+        // objet simple (idcounters) → stocker dans sigc_meta/counters
+        await setDoc(doc(db, 'sigc_meta', 'counters'), { ...data, _ts: Date.now() });
+        return;
+      }
+      // Tableau → batch write (max 500 docs par batch)
+      const batches = [];
+      let batch = writeBatch(db);
+      let count = 0;
+      data.forEach(item => {
+        const ref = doc(db, colName, String(item.id || item.login || Math.random()));
+        batch.set(ref, { ...item, _sigc_key: key });
+        count++;
+        if (count === 400) { batches.push(batch); batch = writeBatch(db); count = 0; }
+      });
+      batches.push(batch);
+      await Promise.all(batches.map(b => b.commit()));
+    } catch(e) {
+      console.warn('[SIGC Firebase] writeCollection error:', key, e.message);
+    }
+  },
+
+  // ── Lire toute une collection Firestore → tableau ──
+  async readCollection(key) {
+    if (!window.FIREBASE_READY) return null;
+    const fb = window.__FB;
+    const colName = FB.COLLECTIONS[key];
+    if (!colName) return null;
+    const { getDocs, collection, doc, getDoc } = fb.fn;
+    const db = fb.db();
+    try {
+      if (key === 'idcounters') {
+        const snap = await getDoc(doc(db, 'sigc_meta', 'counters'));
+        return snap.exists() ? snap.data() : null;
+      }
+      const snap = await getDocs(collection(db, colName));
+      if (snap.empty) return null;
+      return snap.docs.map(d => { const dt = d.data(); delete dt._sigc_key; return dt; });
+    } catch(e) {
+      console.warn('[SIGC Firebase] readCollection error:', key, e.message);
+      return null;
+    }
+  },
+
+  // ── Écrire un seul document dans Firestore ──
+  async writeDoc(key, id, data) {
+    if (!window.FIREBASE_READY) return;
+    const fb = window.__FB;
+    const colName = FB.COLLECTIONS[key];
+    if (!colName) return;
+    const { setDoc, doc } = fb.fn;
+    const db = fb.db();
+    try {
+      await setDoc(doc(db, colName, String(id)), { ...data, _sigc_key: key, _ts: Date.now() });
+    } catch(e) {
+      console.warn('[SIGC Firebase] writeDoc error:', key, id, e.message);
+    }
+  },
+
+  // ── Supprimer un document dans Firestore ──
+  async deleteDoc(key, id) {
+    if (!window.FIREBASE_READY) return;
+    const fb = window.__FB;
+    const colName = FB.COLLECTIONS[key];
+    if (!colName) return;
+    const { deleteDoc, doc } = fb.fn;
+    const db = fb.db();
+    try {
+      await deleteDoc(doc(db, colName, String(id)));
+    } catch(e) {
+      console.warn('[SIGC Firebase] deleteDoc error:', key, id, e.message);
+    }
+  },
+
+  // ── Écouter une collection en temps réel (onSnapshot) ──
+  // Déclenche un callback à chaque modification sur n'importe quel poste
+  _listeners: {},
+  listenCollection(key, callback) {
+    if (!window.FIREBASE_READY) return;
+    if (FB._listeners[key]) FB._listeners[key](); // Unsubscribe existant
+    const fb = window.__FB;
+    const colName = FB.COLLECTIONS[key];
+    if (!colName || key === 'idcounters') return;
+    const { onSnapshot, collection } = fb.fn;
+    const db = fb.db();
+    FB._listeners[key] = onSnapshot(collection(db, colName), (snap) => {
+      const data = snap.docs.map(d => { const dt = d.data(); delete dt._sigc_key; delete dt._ts; return dt; });
+      _cache[key] = data;
+      localStorage.setItem('sigc_'+key, JSON.stringify(data));
+      if (typeof callback === 'function') callback(data);
+    }, (err) => {
+      console.warn('[SIGC Firebase] listener error:', key, err.message);
+    });
+  },
+
+  // ── Activer tous les listeners temps réel ──
+  startAllListeners() {
+    const refreshMap = {
+      'interventions': () => { renderInterventions(); updateBadges(); refreshDashboard(); },
+      'mc':            () => { if(typeof renderMC==='function') renderMC(); updateBadges(); refreshDashboard(); },
+      'gav':           () => { renderGAV(); updateBadges(); refreshDashboard(); },
+      'pv':            () => { renderPV(); refreshDashboard(); },
+      'vehicules':     () => { renderVehicules(); refreshDashboard(); },
+      'personnel':     () => { renderPersonnel(); refreshDashboard(); },
+      'vacations':     () => { renderVacations(); refreshDashboard(); },
+      'affectations':  () => { renderAffectations(); },
+      'logs':          () => { if(currentUser?.role==='admin') renderLogs(); },
+      'users':         () => { if(currentUser?.role==='admin') renderAdminUsers(); },
+    };
+    Object.keys(refreshMap).forEach(key => {
+      FB.listenCollection(key, (data) => {
+        // Ne rafraîchir que si l'app est visible et l'utilisateur connecté
+        if (currentUser && document.getElementById('app').classList.contains('visible')) {
+          refreshMap[key]();
+          notify(`🔥 Sync Firebase — ${key} mis à jour`, 'info');
+        }
+      });
+    });
+  },
+
+  // ── Charger toutes les données depuis Firestore au démarrage ──
+  async loadAll() {
+    if (!window.FIREBASE_READY) return;
+    const keys = Object.keys(FB.COLLECTIONS);
+    const results = await Promise.all(keys.map(k => FB.readCollection(k).then(d => [k, d])));
+    results.forEach(([k, data]) => {
+      if (data !== null) {
+        _cache[k] = data;
+        localStorage.setItem('sigc_'+k, JSON.stringify(data));
+      }
+    });
+  },
+
+  // ── Authentification Firebase Auth ──
+  async loginWithFirebase(email, password) {
+    const fb = window.__FB;
+    const { signInWithEmailAndPassword } = fb.fn;
+    const auth = fb.auth();
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      return { ok: true, uid: cred.user.uid, email: cred.user.email };
+    } catch(e) {
+      return { ok: false, error: e.code };
+    }
+  },
+
+  async logoutFirebase() {
+    if (!window.FIREBASE_READY) return;
+    const fb = window.__FB;
+    try { await fb.fn.signOut(fb.auth()); } catch(e) {}
+    // Stopper les listeners
+    Object.values(FB._listeners).forEach(unsub => { try { unsub(); } catch(e){} });
+    FB._listeners = {};
+  }
+
+};
+
+// ─── INIT DATA (Firebase + localStorage fallback) ───
+async function initData() {
+  // Afficher un écran de chargement
+  showLoadingOverlay('Chargement des données...');
+
+  if (window.FIREBASE_READY) {
+    try {
+      await FB.loadAll();
+      notify('🔥 Données chargées depuis Firebase', 'success');
+    } catch(e) {
+      console.warn('[SIGC] Erreur chargement Firebase, fallback localStorage');
+    }
+  }
+
+  // Données par défaut si rien n'existe
+  if (!LS.get('users')) {
+    LS.set('users', [
+      { id:1, login:'admin', pass:'Admin@2024', grade:'COL', nom:'DUPONT', prenom:'Jean', role:'admin', unite:'Compagnie de Saumur', statut:'ACTIF', lastAccess:'' },
+      { id:2, login:'corg', pass:'Corg@2024', grade:'ADJ-CH', nom:'MARTIN', prenom:'Sophie', role:'corg', unite:'CORG — Groupement', statut:'ACTIF', lastAccess:'' },
+      { id:3, login:'pam', pass:'Pam@2024', grade:'ADJ', nom:'BERNARD', prenom:'Luc', role:'pam', unite:'Brigade de Doué-la-Fontaine', statut:'ACTIF', lastAccess:'' },
+    ]);
+  }
+  if (!LS.get('mc')) LS.set('mc', []);
+  if (!LS.get('vacations')) LS.set('vacations', []);
+  if (!LS.get('affectations')) LS.set('affectations', []);
+  if (!LS.get('interventions')) LS.set('interventions', []);
+  if (!LS.get('gav')) LS.set('gav', []);
+  if (!LS.get('pv')) LS.set('pv', []);
+  if (!LS.get('personnel')) {
+    LS.set('personnel', [
+      { id:1, matricule:'2019-012', grade:'ADJ', nom:'MARTIN', prenom:'Jean-Pierre', unite:'Brigade de Doué-la-Fontaine', fonction:'Chef de brigade', qual:'OPJ', dispo:'PRÉSENT' },
+      { id:2, matricule:'2020-031', grade:'GND-CH', nom:'DUPONT', prenom:'Marie', unite:'Brigade de Doué-la-Fontaine', fonction:'Enquêteur', qual:'APJ', dispo:'PRÉSENT' },
+      { id:3, matricule:'2021-008', grade:'GND', nom:'LEFEBVRE', prenom:'Thomas', unite:'PSIG', fonction:'Cavalier PSIG', qual:'APJa', dispo:'GARDE' },
+      { id:4, matricule:'2018-044', grade:'ADJ-CH', nom:'ROUSSEAU', prenom:'Claire', unite:'PPGN', fonction:'Chef de groupe', qual:'OPJ / APJ', dispo:'CONGÉ' },
+    ]);
+  }
+  if (!LS.get('vehicules')) {
+    LS.set('vehicules', [
+      { id:1, immat:'GN-001-AA', modele:'Peugeot 3008', type:'VTU', affecte:'Brigade de Doué-la-Fontaine', km:87432, ct:'2025-06-15', etat:'DISPONIBLE' },
+      { id:2, immat:'GN-002-AA', modele:'Renault Duster', type:'4X4', affecte:'PSIG', km:124600, ct:'2024-12-01', etat:'EN SERVICE' },
+      { id:3, immat:'GN-003-AA', modele:'BMW R1250RT', type:'MOTO', affecte:'Brigade motorisée', km:43210, ct:'2025-03-20', etat:'EN MAINTENANCE' },
+    ]);
+  }
+  if (!LS.get('logs')) LS.set('logs', []);
+  if (!LS.get('idcounters')) LS.set('idcounters', { mc:100, vac:1, aff:1, int:100, gav:1, pv:2024001, pers:100, vh:1, user:4 });
+
+  hideLoadingOverlay();
+}
+
+function nextId(type) {
+  const c = LS.get('idcounters');
+  c[type]++;
+  LS.set('idcounters', c);
+  // Sync le compteur dans Firestore aussi
+  if (window.FIREBASE_READY) FB.writeDoc('idcounters', 'counters', c);
+  return c[type];
+}
+
+// ─── LOADING OVERLAY ───
+function showLoadingOverlay(msg) {
+  let el = document.getElementById('sigc-loading');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sigc-loading';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(244,246,250,0.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;';
+    el.innerHTML = `
+      <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 5 L90 20 L90 55 C90 75 70 92 50 98 C30 92 10 75 10 55 L10 20 Z" fill="#003189" stroke="#c9a84c" stroke-width="3"/>
+        <ellipse cx="50" cy="55" rx="14" ry="16" fill="#c9a84c"/>
+        <line x1="50" y1="39" x2="50" y2="30" stroke="#c9a84c" stroke-width="3"/>
+        <ellipse cx="50" cy="26" rx="4" ry="5" fill="#c9a84c"/>
+        <text x="50" y="61" text-anchor="middle" font-size="13" font-weight="bold" fill="#003189" font-family="serif">RF</text>
+      </svg>
+      <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:#003189;text-transform:uppercase" id="sigc-loading-msg">${msg||'Chargement...'}</div>
+      <div style="width:200px;height:3px;background:#d0d9e8;border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:#003189;animation:loadbar 1.5s ease-in-out infinite;border-radius:2px" id="sigc-loadbar"></div>
+      </div>
+      <style>@keyframes loadbar{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}</style>`;
+    document.body.appendChild(el);
+  }
+  const m = document.getElementById('sigc-loading-msg');
+  if (m) m.textContent = msg || 'Chargement...';
+  el.style.display = 'flex';
+}
+function hideLoadingOverlay() {
+  const el = document.getElementById('sigc-loading');
+  if (el) el.style.display = 'none';
+}
+
+// ─── SESSION ───
+let currentUser = null;
+
+async function doLogin() {
+  const loginVal = document.getElementById('login-user').value.trim();
+  const passVal  = document.getElementById('login-pass').value.trim();
+  if (!loginVal || !passVal) return;
+
+  document.getElementById('login-error').style.display = 'none';
+  showLoadingOverlay('Authentification en cours...');
+
+  // ── Option 1 : Firebase Auth (si email fourni) ──
+  if (window.FIREBASE_READY && loginVal.includes('@')) {
+    const result = await FB.loginWithFirebase(loginVal, passVal);
+    if (!result.ok) {
+      hideLoadingOverlay();
+      const errMap = {
+        'auth/invalid-credential':    'Identifiants Firebase incorrects.',
+        'auth/user-not-found':        'Utilisateur introuvable.',
+        'auth/wrong-password':        'Mot de passe incorrect.',
+        'auth/too-many-requests':     'Trop de tentatives. Réessayez plus tard.',
+        'auth/network-request-failed':'Erreur réseau. Vérifiez votre connexion.',
+      };
+      document.getElementById('login-error').textContent = errMap[result.error] || 'Connexion Firebase refusée.';
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    // Chercher le profil dans Firestore/localStorage par email ou login
+    const users = LS.get('users') || [];
+    let user = users.find(u => u.login === loginVal || u.email === loginVal);
+    if (!user) {
+      // Créer un profil minimal lié à l'email Firebase
+      user = { id: Date.now(), login: loginVal, email: loginVal, grade: 'GND', nom: result.email.split('@')[0].toUpperCase(), prenom: '', role: 'user', unite: '', statut: 'ACTIF', lastAccess: '' };
+      users.push(user);
+      LS.set('users', users);
+    }
+    if (user.statut !== 'ACTIF') {
+      hideLoadingOverlay();
+      document.getElementById('login-error').textContent = 'Compte suspendu. Contactez l\'administrateur.';
+      document.getElementById('login-error').style.display = 'block';
+      await FB.logoutFirebase();
+      return;
+    }
+    _finishLogin(user);
+    return;
+  }
+
+  // ── Option 2 : Authentification par identifiant SIGC (localStorage) ──
+  const users = LS.get('users') || [];
+  const user = users.find(u => u.login === loginVal && u.pass === passVal && u.statut === 'ACTIF');
+  if (!user) {
+    hideLoadingOverlay();
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  _finishLogin(user);
+}
+
+function _finishLogin(user) {
+  currentUser = user;
+  user.lastAccess = new Date().toLocaleString('fr-FR');
+  const us = LS.get('users') || [];
+  const idx = us.findIndex(u => u.id === user.id);
+  if (idx >= 0) { us[idx] = user; LS.set('users', us); }
+  addLog('CONNEXION', `Connexion de ${user.grade} ${user.nom}`, user.login);
+  // Démarrer les listeners temps réel Firebase
+  if (window.FIREBASE_READY) FB.startAllListeners();
+  hideLoadingOverlay();
+  startApp();
+}
+
+async function doLogout() {
+  addLog('DÉCONNEXION', `Déconnexion de ${currentUser.grade} ${currentUser.nom}`, currentUser.login);
+  if (window.FIREBASE_READY) await FB.logoutFirebase();
+  currentUser = null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('header-name').textContent = `${currentUser.grade} ${currentUser.nom} ${currentUser.prenom}`;
+  document.getElementById('header-grade').textContent = currentUser.unite;
+  const rb = document.getElementById('header-role-badge');
+  rb.textContent = currentUser.role.toUpperCase();
+  rb.className = 'role-badge ' + currentUser.role;
+  const adminSec = document.getElementById('admin-section');
+  adminSec.style.display = (currentUser.role === 'admin') ? '' : 'none';
+  showView('dashboard');
+  refreshDashboard();
+  updateBadges();
+  document.getElementById('vac-date-filter').value = todayStr();
+}
+
+// ─── CLOCK ───
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── NAVIGATION ───
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const view = document.getElementById('view-'+id);
+  if (view) view.classList.add('active');
+  const nav = document.getElementById('nav-'+id);
+  if (nav) nav.classList.add('active');
+  // Render view
+  const renders = {
+    'dashboard': refreshDashboard,
+    'main-courante': renderMC,
+    'vacations': renderVacations,
+    'affectations': renderAffectations,
+    'interventions': renderInterventions,
+    'gav': renderGAV,
+    'pv': renderPV,
+    'personnel': renderPersonnel,
+    'vehicules': renderVehicules,
+    'admin-users': renderAdminUsers,
+    'admin-logs': renderLogs,
+  };
+  if (renders[id]) renders[id]();
+  // Access checks for CORG/PAM
+  if (id === 'admin-users' || id === 'admin-logs') {
+    if (currentUser.role !== 'admin') {
+      document.getElementById('admin-users-content') && (document.getElementById('admin-users-content').style.display = 'none');
+      document.getElementById('admin-access-check') && (document.getElementById('admin-access-check').style.display = 'flex');
+    }
+  }
+}
+
+// ─── MODALS ───
+function openModal(id) {
+  // Reset form fields inside modal
+  const modal = document.getElementById(id);
+  modal.querySelectorAll('input:not([type=hidden])').forEach(i => {
+    if (i.type === 'time') { const now = new Date(); i.value = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); }
+    else if (i.type === 'date') { i.value = todayStr(); }
+    else if (i.type === 'datetime-local') { i.value = new Date().toISOString().slice(0,16); }
+    else if (i.id !== 'gav-nat') i.value = '';
+  });
+  modal.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  modal.querySelectorAll('textarea').forEach(t => t.value = '');
+  modal.classList.add('open');
+  // populate vehicle select
+  if (id === 'modal-vacation') {
+    const sel = document.getElementById('vac-vh');
+    const vhs = LS.get('vehicules') || [];
+    sel.innerHTML = '<option value="">-- Aucun --</option>';
+    vhs.filter(v => v.etat === 'DISPONIBLE' || v.etat === 'EN SERVICE')
+       .forEach(v => sel.innerHTML += `<option value="${v.immat}">${v.immat} — ${v.modele}</option>`);
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ─── NOTIFICATIONS ───
+function notify(msg, type='success') {
+  const bar = document.getElementById('notif-bar');
+  const el = document.createElement('div');
+  el.className = 'notif ' + type;
+  el.innerHTML = msg;
+  bar.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.4s'; setTimeout(()=>el.remove(),400); }, 3500);
+}
+
+// ─── UTILS ───
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function fmtDate(d) { if (!d) return '—'; const dt = new Date(d); return dt.toLocaleDateString('fr-FR'); }
+function fmtDateTime(d) { if (!d) return '—'; const dt = new Date(d); return dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}); }
+function statusBadge(s) {
+  const map = { 'EN COURS':'badge-red','CLOS':'badge-gray','TRANSMIS':'badge-blue','DISPONIBLE':'badge-green','EN SERVICE':'badge-gold','EN MAINTENANCE':'badge-gold','HORS SERVICE':'badge-red','ACTIF':'badge-green','SUSPENDU':'badge-red','PRÉSENT':'badge-green','CONGÉ':'badge-gold','ABSENT':'badge-red','GARDE':'badge-blue','LEVÉE':'badge-green','PROLONGÉE':'badge-red' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
+function addLog(action, details, login) {
+  const logs = LS.get('logs') || [];
+  logs.unshift({
+    ts: new Date().toLocaleString('fr-FR'),
+    user: login || (currentUser ? currentUser.login : '—'),
+    action, details,
+    ip: '192.168.' + Math.floor(Math.random()*10) + '.' + Math.floor(Math.random()*255)
+  });
+  if (logs.length > 200) logs.pop();
+  LS.set('logs', logs);
+}
+
+function updateBadges() {
+  const mc = LS.get('mc') || [];
+  const gav = LS.get('gav') || [];
+  const int = LS.get('interventions') || [];
+  document.getElementById('badge-mc').textContent = mc.filter(m => m.statut === 'EN COURS').length;
+  document.getElementById('badge-gav').textContent = gav.filter(g => g.statut === 'EN COURS').length;
+  document.getElementById('badge-int').textContent = int.filter(i => i.statut === 'EN COURS').length;
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+function refreshDashboard() {
+  const mc = LS.get('mc') || [];
+  const gav = LS.get('gav') || [];
+  const vac = LS.get('vacations') || [];
+  const pers = LS.get('personnel') || [];
+  const int = LS.get('interventions') || [];
+  const vh = LS.get('vehicules') || [];
+  const pv = LS.get('pv') || [];
+  const today = todayStr();
+
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('stat-present').textContent = pers.filter(p => p.dispo === 'PRÉSENT' || p.dispo === 'GARDE').length;
+  document.getElementById('stat-gav').textContent = gav.filter(g => g.statut === 'EN COURS').length;
+  document.getElementById('stat-vac').textContent = vac.filter(v => v.date === today).length;
+  document.getElementById('stat-int').textContent = int.filter(i => (i.date||'').startsWith(today)).length;
+  document.getElementById('stat-vh').textContent = vh.filter(v => v.etat === 'DISPONIBLE').length;
+  document.getElementById('stat-pv').textContent = pv.filter(p => p.statut === 'EN COURS').length;
+
+  // Recent MC
+  const tbody = document.getElementById('dash-mc-tbody');
+  const recent = [...mc].reverse().slice(0,5);
+  if (!recent.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px;">Aucun événement enregistré</td></tr>'; }
+  else tbody.innerHTML = recent.map(m => `<tr>
+    <td class="mono">${m.num}</td>
+    <td class="nowrap">${m.heure||'—'}</td>
+    <td><span class="badge badge-gold">${m.type}</span></td>
+    <td>${m.lieu||'—'}</td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.desc||'—'}</td>
+    <td>${statusBadge(m.statut)}</td>
+  </tr>`).join('');
+
+  // GAV list
+  const gavCours = gav.filter(g => g.statut === 'EN COURS');
+  document.getElementById('dash-gav-list').innerHTML = gavCours.length
+    ? gavCours.map(g => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--navy-border);">
+        <span class="mono" style="color:var(--red-light)">GAV-${String(g.id).padStart(3,'0')}</span>
+        &nbsp;${g.nom} ${g.prenom} — <span style="color:var(--text-secondary)">${g.motif||'—'}</span>
+      </div>`).join('')
+    : '<span style="font-size:12px;color:var(--text-dim)">Aucune garde à vue en cours</span>';
+
+  // Vacations today
+  const vacToday = vac.filter(v => v.date === today);
+  document.getElementById('dash-vac-list').innerHTML = vacToday.length
+    ? vacToday.map(v => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--navy-border);">
+        <span style="color:var(--gold);font-family:'Courier New';font-size:11px;">${v.hdebut||'—'}→${v.hfin||'—'}</span>
+        &nbsp;${v.type} — <span style="color:var(--text-secondary)">${v.zone||'—'}</span>
+      </div>`).join('')
+    : '<span style="font-size:12px;color:var(--text-dim)">Aucune vacation planifiée aujourd\'hui</span>';
+}
+
+// ═══════════════════════════════════════════
+//  MAIN COURANTE
+// ═══════════════════════════════════════════
+function saveMC() {
+  const id = nextId('mc');
+  const num = 'MC-' + String(id).padStart(4,'0');
+  const entry = {
+    id, num, date: todayStr(),
+    heure: document.getElementById('mc-heure').value,
+    type: document.getElementById('mc-type').value,
+    lieu: document.getElementById('mc-lieu').value,
+    desc: document.getElementById('mc-desc').value,
+    militaires: document.getElementById('mc-militaires').value,
+    statut: document.getElementById('mc-statut').value,
+    proc: document.getElementById('mc-proc').value,
+    createdBy: currentUser.login,
+  };
+  const list = LS.get('mc') || [];
+  list.push(entry);
+  LS.set('mc', list);
+  addLog('MAIN COURANTE', `Création événement ${num} — ${entry.type}`);
+  closeModal('modal-mc');
+  renderMC();
+  updateBadges();
+  notify(`✓ Événement ${num} enregistré`);
+}
+
+function filterMC() { renderMC(); }
+
+function renderMC() {
+  const tbody = document.getElementById('mc-tbody');
+  if (!tbody) return;
+  let list = [...(LS.get('mc') || [])].reverse();
+  const search = document.getElementById('mc-search')?.value.toLowerCase()||'';
+  const ftype = document.getElementById('mc-filter-type')?.value||'';
+  const fstat = document.getElementById('mc-filter-statut')?.value||'';
+  if (search) list = list.filter(m => JSON.stringify(m).toLowerCase().includes(search));
+  if (ftype) list = list.filter(m => m.type === ftype);
+  if (fstat) list = list.filter(m => m.statut === fstat);
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">Aucun événement trouvé</td></tr>'; return; }
+  tbody.innerHTML = list.map(m => `<tr>
+    <td class="mono" style="color:var(--gold)">${m.num}</td>
+    <td class="nowrap mono">${m.date||''} ${m.heure||''}</td>
+    <td><span class="badge badge-gold">${m.type}</span></td>
+    <td>${m.lieu||'—'}</td>
+    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.desc||'—'}</td>
+    <td style="font-size:11px">${m.militaires||'—'}</td>
+    <td>${statusBadge(m.statut)}</td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="editMCStatut(${m.id})">✎ Statut</button>
+      ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteMC(${m.id})">✕</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+function editMCStatut(id) {
+  const list = LS.get('mc') || [];
+  const item = list.find(m => m.id === id);
+  if (!item) return;
+  const statuts = ['EN COURS', 'CLOS', 'TRANSMIS'];
+  const cur = statuts.indexOf(item.statut);
+  item.statut = statuts[(cur + 1) % statuts.length];
+  LS.set('mc', list);
+  renderMC(); updateBadges();
+  notify(`Statut → ${item.statut}`);
+}
+function deleteMC(id) {
+  if (!confirm('Supprimer cet événement ?')) return;
+  LS.set('mc', (LS.get('mc')||[]).filter(m => m.id !== id));
+  renderMC(); updateBadges();
+}
+
+// ═══════════════════════════════════════════
+//  VACATIONS
+// ═══════════════════════════════════════════
+function saveVacation() {
+  const id = nextId('vac');
+  const entry = {
+    id,
+    date: document.getElementById('vac-date').value,
+    type: document.getElementById('vac-type').value,
+    hdebut: document.getElementById('vac-hdebut').value,
+    hfin: document.getElementById('vac-hfin').value,
+    militaires: document.getElementById('vac-militaires').value,
+    vehicule: document.getElementById('vac-vh').value,
+    zone: document.getElementById('vac-zone').value,
+    notes: document.getElementById('vac-notes').value,
+    createdBy: currentUser.login,
+  };
+  const list = LS.get('vacations') || [];
+  list.push(entry);
+  LS.set('vacations', list);
+  addLog('VACATION', `Création vacation ${entry.type} — ${entry.date}`);
+  closeModal('modal-vacation');
+  renderVacations();
+  notify('✓ Vacation enregistrée');
+}
+
+function renderVacations() {
+  const el = document.getElementById('vac-list');
+  if (!el) return;
+  const dateFilter = document.getElementById('vac-date-filter')?.value || todayStr();
+  let list = (LS.get('vacations') || []).filter(v => v.date === dateFilter);
+  // Stats
+  document.getElementById('vstat-jour').textContent = list.filter(v => v.type === 'SERVICE JOUR').length;
+  document.getElementById('vstat-nuit').textContent = list.filter(v => v.type === 'SERVICE NUIT').length;
+  document.getElementById('vstat-patr').textContent = list.filter(v => v.type === 'PATROUILLE').length;
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px;font-size:13px;">Aucune vacation planifiée pour cette date</div>'; return; }
+  list.sort((a,b) => (a.hdebut||'').localeCompare(b.hdebut||''));
+  el.innerHTML = list.map(v => `
+    <div class="vac-slot" onclick="">
+      <div class="vac-time">${v.hdebut||'--:--'} → ${v.hfin||'--:--'}</div>
+      <div>
+        <div class="vac-type">${v.type}</div>
+        <div class="vac-agents">${v.zone||''}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--text-secondary)">${v.militaires||'—'}</div>
+        ${v.vehicule ? `<div style="font-size:10px;color:var(--gold);margin-top:2px">🚔 ${v.vehicule}</div>` : ''}
+      </div>
+      ${v.notes ? `<div style="font-size:11px;color:var(--text-dim);max-width:200px;font-style:italic">${v.notes}</div>` : ''}
+      <div>
+        ${currentUser.role === 'admin' || currentUser.role === 'corg' ? `<button class="btn btn-danger btn-sm" onclick="deleteVacation(${v.id})">✕</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteVacation(id) {
+  if (!confirm('Supprimer cette vacation ?')) return;
+  LS.set('vacations', (LS.get('vacations')||[]).filter(v => v.id !== id));
+  renderVacations();
+}
+
+// ═══════════════════════════════════════════
+//  AFFECTATIONS
+// ═══════════════════════════════════════════
+function saveAffectation() {
+  const id = nextId('aff');
+  const entry = {
+    id,
+    grade: document.getElementById('aff-grade').value,
+    nom: document.getElementById('aff-nom').value.toUpperCase(),
+    prenom: document.getElementById('aff-prenom').value,
+    unite: document.getElementById('aff-unite').value,
+    poste: document.getElementById('aff-poste').value,
+    type: document.getElementById('aff-type').value,
+    ddebut: document.getElementById('aff-ddebut').value,
+    dfin: document.getElementById('aff-dfin').value,
+    obs: document.getElementById('aff-obs').value,
+    statut: 'ACTIVE',
+    createdBy: currentUser.login,
+  };
+  const list = LS.get('affectations') || [];
+  list.push(entry);
+  LS.set('affectations', list);
+  addLog('AFFECTATION', `Nouvelle affectation: ${entry.grade} ${entry.nom} → ${entry.unite}`);
+  closeModal('modal-affectation');
+  renderAffectations();
+  notify('✓ Affectation enregistrée');
+}
+
+function renderAffectations() {
+  const tbody = document.getElementById('aff-tbody');
+  if (!tbody) return;
+  const search = document.getElementById('aff-search')?.value.toLowerCase()||'';
+  let list = LS.get('affectations') || [];
+  if (search) list = list.filter(a => JSON.stringify(a).toLowerCase().includes(search));
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">Aucune affectation enregistrée</td></tr>'; return; }
+  tbody.innerHTML = list.map(a => `<tr>
+    <td><strong>${a.grade}</strong> ${a.nom} ${a.prenom}</td>
+    <td>${a.unite||'—'}</td>
+    <td>${a.poste||'—'}</td>
+    <td><span class="badge badge-blue">${a.type}</span></td>
+    <td>${fmtDate(a.ddebut)}</td>
+    <td>${a.dfin ? fmtDate(a.dfin) : '—'}</td>
+    <td>${statusBadge(a.statut||'ACTIVE')}</td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="toggleAffStatut(${a.id})">✎</button>
+      ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteAff(${a.id})">✕</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+function toggleAffStatut(id) {
+  const list = LS.get('affectations') || [];
+  const item = list.find(a => a.id === id);
+  if (!item) return;
+  item.statut = item.statut === 'ACTIVE' ? 'TERMINÉE' : 'ACTIVE';
+  LS.set('affectations', list);
+  renderAffectations();
+  notify(`Statut → ${item.statut}`);
+}
+function deleteAff(id) {
+  if (!confirm('Supprimer cette affectation ?')) return;
+  LS.set('affectations', (LS.get('affectations')||[]).filter(a => a.id !== id));
+  renderAffectations();
+}
+
+// ═══════════════════════════════════════════
+//  INTERVENTIONS
+// ═══════════════════════════════════════════
+function saveIntervention() {
+  const id = nextId('int');
+  const num = 'INT-' + String(id).padStart(4,'0');
+  const now = new Date();
+  const entry = {
+    id, num,
+    date: now.toISOString(),
+    nature: document.getElementById('int-nature').value,
+    heure: document.getElementById('int-heure').value,
+    adresse: document.getElementById('int-adresse').value,
+    patrouille: document.getElementById('int-patrouille').value,
+    arrivee: document.getElementById('int-arrivee').value,
+    cr: document.getElementById('int-cr').value,
+    statut: 'EN COURS',
+    createdBy: currentUser.login,
+  };
+  const list = LS.get('interventions') || [];
+  list.push(entry);
+  LS.set('interventions', list);
+  addLog('INTERVENTION', `Nouvelle intervention ${num} — ${entry.nature}`);
+  closeModal('modal-intervention');
+  renderInterventions();
+  updateBadges();
+  notify(`🚨 Intervention ${num} créée`, 'error');
+  // Auto-create MC entry
+  const mcList = LS.get('mc') || [];
+  const mcId = nextId('mc');
+  mcList.push({
+    id: mcId, num: 'MC-'+String(mcId).padStart(4,'0'),
+    date: todayStr(), heure: entry.heure,
+    type: 'INTERVENTION', lieu: entry.adresse,
+    desc: `${entry.nature} — Patrouille: ${entry.patrouille}`,
+    militaires: entry.patrouille, statut: 'EN COURS',
+    createdBy: currentUser.login,
+  });
+  LS.set('mc', mcList);
+  updateBadges();
+}
+
+function renderInterventions() {
+  const tbody = document.getElementById('int-tbody');
+  if (!tbody) return;
+  const today = todayStr();
+  let list = [...(LS.get('interventions') || [])].filter(i => (i.date||'').startsWith(today)).reverse();
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">Aucune intervention aujourd\'hui</td></tr>'; return; }
+  tbody.innerHTML = list.map(i => `<tr>
+    <td class="mono" style="color:var(--red-light)">${i.num}</td>
+    <td class="mono">${i.heure||'—'}</td>
+    <td><span class="badge badge-red">${i.nature}</span></td>
+    <td>${i.adresse||'—'}</td>
+    <td style="font-size:11px">${i.patrouille||'—'}</td>
+    <td class="mono">${i.arrivee||'—'}</td>
+    <td>${statusBadge(i.statut)}</td>
+    <td>
+      <button class="btn btn-success btn-sm" onclick="cloreIntervention(${i.id})">✓ Clore</button>
+      ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteInt(${i.id})">✕</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+function cloreIntervention(id) {
+  const list = LS.get('interventions') || [];
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+  item.statut = 'CLOS';
+  LS.set('interventions', list);
+  renderInterventions(); updateBadges();
+  notify('✓ Intervention close');
+}
+function deleteInt(id) {
+  if (!confirm('Supprimer ?')) return;
+  LS.set('interventions', (LS.get('interventions')||[]).filter(i => i.id !== id));
+  renderInterventions(); updateBadges();
+}
+
+// ═══════════════════════════════════════════
+//  GARDE A VUE
+// ═══════════════════════════════════════════
+function saveGAV() {
+  const id = nextId('gav');
+  const entry = {
+    id,
+    nom: document.getElementById('gav-nom').value.toUpperCase(),
+    prenom: document.getElementById('gav-prenom').value,
+    ddn: document.getElementById('gav-ddn').value,
+    lbn: document.getElementById('gav-lbn').value,
+    nat: document.getElementById('gav-nat').value,
+    dom: document.getElementById('gav-dom').value,
+    motif: document.getElementById('gav-motif').value,
+    datePlacement: document.getElementById('gav-date').value,
+    opj: document.getElementById('gav-opj').value,
+    avocat: document.getElementById('gav-avocat').value,
+    medecin: document.getElementById('gav-medecin').value,
+    effets: document.getElementById('gav-effets').value,
+    statut: 'EN COURS',
+    dateLevee: '',
+    prolongee: false,
+    createdBy: currentUser.login,
+  };
+  const list = LS.get('gav') || [];
+  list.push(entry);
+  LS.set('gav', list);
+  addLog('GARDE À VUE', `Placement en GAV: ${entry.nom} ${entry.prenom} — Motif: ${entry.motif}`);
+  closeModal('modal-gav');
+  renderGAV();
+  updateBadges();
+  notify(`🔒 GAV-${String(id).padStart(3,'0')} — ${entry.nom} ${entry.prenom} placé(e) en garde à vue`, 'error');
+}
+
+let currentGavId = null;
+function renderGAV() {
+  const el = document.getElementById('gav-list');
+  if (!el) return;
+  const list = LS.get('gav') || [];
+  document.getElementById('gstat-cours').textContent = list.filter(g => g.statut === 'EN COURS').length;
+  document.getElementById('gstat-prol').textContent = list.filter(g => g.prolongee).length;
+  document.getElementById('gstat-lev').textContent = list.filter(g => g.statut === 'LEVÉE' && (g.dateLevee||'').startsWith(todayStr())).length;
+
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px;">Aucune garde à vue enregistrée</div>'; return; }
+  el.innerHTML = [...list].reverse().map(g => `
+    <div class="gav-card" style="${g.statut==='LEVÉE'?'opacity:0.5;border-left-color:var(--green);':''}">
+      <div class="gav-num">GAV-${String(g.id).padStart(3,'0')}</div>
+      <div class="gav-info">
+        <div class="gav-name">${g.nom} ${g.prenom}</div>
+        <div class="gav-meta">
+          Né(e) le ${fmtDate(g.ddn)} à ${g.lbn||'—'} — ${g.nat||'—'}<br>
+          <strong>Motif :</strong> ${g.motif||'—'}<br>
+          <strong>Placé(e) le :</strong> ${fmtDateTime(g.datePlacement)} — OPJ : ${g.opj||'—'}<br>
+          Avocat : ${g.avocat} | Médecin : ${g.medecin}
+          ${g.prolongee ? ' | <span style="color:var(--red-light)">⚠ PROLONGÉE</span>' : ''}
+          ${g.dateLevee ? `<br>Levée le : ${fmtDateTime(g.dateLevee)}` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        ${statusBadge(g.statut)}
+        ${g.statut==='EN COURS' ? `
+          <button class="btn btn-outline btn-sm" onclick="openGAVDetail(${g.id})">📋 Détail / Lever</button>
+          <button class="btn btn-blue btn-sm" onclick="prolongerGAV(${g.id})">⏰ Prolonger</button>
+        ` : ''}
+        ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteGAV(${g.id})">✕</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function openGAVDetail(id) {
+  currentGavId = id;
+  const list = LS.get('gav') || [];
+  const g = list.find(x => x.id === id);
+  if (!g) return;
+  const body = document.getElementById('gav-detail-body');
+  body.innerHTML = `
+    <div class="form-grid">
+      <div><div class="form-group"><label>Identité</label><div style="font-size:13px;font-weight:600">${g.nom} ${g.prenom}</div></div></div>
+      <div><div class="form-group"><label>Date de naissance</label><div>${fmtDate(g.ddn)} à ${g.lbn}</div></div></div>
+      <div><div class="form-group"><label>Nationalité</label><div>${g.nat}</div></div></div>
+      <div><div class="form-group"><label>Domicile</label><div>${g.dom||'—'}</div></div></div>
+      <div class="form-grid-full"><div class="form-group"><label>Motif GAV</label><div style="color:var(--red-light)">${g.motif}</div></div></div>
+      <div><div class="form-group"><label>Date placement</label><div>${fmtDateTime(g.datePlacement)}</div></div></div>
+      <div><div class="form-group"><label>OPJ responsable</label><div>${g.opj}</div></div></div>
+      <div><div class="form-group"><label>Avocat</label><div>${g.avocat}</div></div></div>
+      <div><div class="form-group"><label>Médecin</label><div>${g.medecin}</div></div></div>
+      <div class="form-grid-full"><div class="form-group"><label>Effets personnels</label><div>${g.effets||'—'}</div></div></div>
+    </div>
+    <hr class="sep">
+    <div style="font-size:12px;color:var(--text-secondary)">Durée maximale : 24h (prolongeable 24h sur autorisation du Procureur)</div>
+  `;
+  document.getElementById('btn-lev-gav').style.display = g.statut === 'LEVÉE' ? 'none' : '';
+  openModal('modal-gav-detail');
+}
+
+function leveeGAV() {
+  if (!currentGavId) return;
+  if (!confirm('Confirmer la levée de garde à vue ?')) return;
+  const list = LS.get('gav') || [];
+  const item = list.find(g => g.id === currentGavId);
+  if (!item) return;
+  item.statut = 'LEVÉE';
+  item.dateLevee = new Date().toISOString().slice(0,16);
+  LS.set('gav', list);
+  addLog('GAV LEVÉE', `Levée GAV-${String(currentGavId).padStart(3,'0')} — ${item.nom} ${item.prenom}`);
+  closeModal('modal-gav-detail');
+  renderGAV(); updateBadges();
+  notify(`✓ GAV-${String(currentGavId).padStart(3,'0')} levée`, 'success');
+}
+
+function prolongerGAV(id) {
+  if (!confirm('Confirmer la prolongation de garde à vue (autorisation parquet requise) ?')) return;
+  const list = LS.get('gav') || [];
+  const item = list.find(g => g.id === id);
+  if (!item) return;
+  item.prolongee = true;
+  LS.set('gav', list);
+  addLog('GAV PROLONGÉE', `Prolongation GAV-${String(id).padStart(3,'0')} — ${item.nom} ${item.prenom}`);
+  renderGAV();
+  notify(`⏰ GAV-${String(id).padStart(3,'0')} prolongée`, 'error');
+}
+
+function deleteGAV(id) {
+  if (!confirm('Supprimer cette GAV ?')) return;
+  LS.set('gav', (LS.get('gav')||[]).filter(g => g.id !== id));
+  renderGAV(); updateBadges();
+}
+
+// ═══════════════════════════════════════════
+//  PROCEDURES / PV
+// ═══════════════════════════════════════════
+function savePV() {
+  const id = nextId('pv');
+  const num = 'PV-' + String(new Date().getFullYear()) + '-' + String(id).padStart(5,'0');
+  const entry = {
+    id, num,
+    date: document.getElementById('pv-date').value,
+    nature: document.getElementById('pv-nature').value,
+    mic: document.getElementById('pv-mic').value,
+    vic: document.getElementById('pv-vic').value,
+    opj: document.getElementById('pv-opj').value,
+    parquet: document.getElementById('pv-parquet').value,
+    faits: document.getElementById('pv-faits').value,
+    statut: 'EN COURS',
+    createdBy: currentUser.login,
+  };
+  const list = LS.get('pv') || [];
+  list.push(entry);
+  LS.set('pv', list);
+  addLog('PROCÉDURE', `Ouverture procédure ${num} — ${entry.nature}`);
+  closeModal('modal-pv');
+  renderPV();
+  notify(`✓ Procédure ${num} ouverte`);
+}
+
+function renderPV() {
+  const tbody = document.getElementById('pv-tbody');
+  if (!tbody) return;
+  const list = [...(LS.get('pv') || [])].reverse();
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">Aucune procédure enregistrée</td></tr>'; return; }
+  tbody.innerHTML = list.map(p => `<tr>
+    <td class="mono" style="color:var(--gold)">${p.num}</td>
+    <td>${fmtDate(p.date)}</td>
+    <td><span class="badge badge-red">${p.nature}</span></td>
+    <td>${p.mic||'—'}</td>
+    <td>${p.opj||'—'}</td>
+    <td style="font-size:11px">${p.parquet||'—'}</td>
+    <td>${statusBadge(p.statut)}</td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="clorePV(${p.id})">✓ Clore</button>
+      ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deletePV(${p.id})">✕</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+function clorePV(id) {
+  const list = LS.get('pv')||[];
+  const item = list.find(p => p.id===id);
+  if (item) { item.statut = 'CLOS'; LS.set('pv', list); renderPV(); notify('✓ Procédure close'); }
+}
+function deletePV(id) {
+  if (!confirm('Supprimer ?')) return;
+  LS.set('pv', (LS.get('pv')||[]).filter(p => p.id!==id));
+  renderPV();
+}
+
+// ═══════════════════════════════════════════
+//  PERSONNEL
+// ═══════════════════════════════════════════
+function savePersonnel() {
+  const id = nextId('pers');
+  const entry = {
+    id,
+    matricule: document.getElementById('pers-mat').value,
+    grade: document.getElementById('pers-grade').value,
+    nom: document.getElementById('pers-nom').value.toUpperCase(),
+    prenom: document.getElementById('pers-prenom').value,
+    unite: document.getElementById('pers-unite').value,
+    fonction: document.getElementById('pers-fonction').value,
+    qual: document.getElementById('pers-qual').value,
+    dispo: document.getElementById('pers-dispo').value,
+  };
+  const list = LS.get('personnel') || [];
+  list.push(entry);
+  LS.set('personnel', list);
+  addLog('PERSONNEL', `Ajout militaire: ${entry.grade} ${entry.nom} ${entry.prenom}`);
+  closeModal('modal-personnel');
+  renderPersonnel();
+  notify('✓ Militaire enregistré');
+}
+
+function renderPersonnel() {
+  const tbody = document.getElementById('pers-tbody');
+  if (!tbody) return;
+  const search = document.getElementById('pers-search')?.value.toLowerCase()||'';
+  let list = LS.get('personnel') || [];
+  if (search) list = list.filter(p => JSON.stringify(p).toLowerCase().includes(search));
+  // Stats
+  const all = LS.get('personnel') || [];
+  document.getElementById('pstat-total').textContent = all.length;
+  document.getElementById('pstat-pres').textContent = all.filter(p => p.dispo === 'PRÉSENT' || p.dispo === 'GARDE').length;
+  document.getElementById('pstat-conge').textContent = all.filter(p => p.dispo === 'CONGÉ').length;
+  document.getElementById('pstat-abs').textContent = all.filter(p => p.dispo === 'ABSENT').length;
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">Aucun militaire trouvé</td></tr>'; return; }
+  tbody.innerHTML = list.map(p => `<tr>
+    <td class="mono" style="font-size:11px">${p.matricule||'—'}</td>
+    <td><strong>${p.grade}</strong></td>
+    <td>${p.nom} ${p.prenom}</td>
+    <td style="font-size:11px">${p.unite||'—'}</td>
+    <td style="font-size:11px">${p.fonction||'—'}</td>
+    <td><span class="badge badge-blue" style="font-size:9px">${p.qual||'—'}</span></td>
+    <td>
+      <span class="dispo-dot ${p.dispo==='PRÉSENT'?'present':p.dispo==='ABSENT'?'absent':p.dispo==='CONGÉ'?'conge':'garde'}"></span>
+      ${p.dispo}
+    </td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="cycleDispo(${p.id})">✎ Dispo</button>
+      ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deletePers(${p.id})">✕</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+function cycleDispo(id) {
+  const list = LS.get('personnel') || [];
+  const item = list.find(p => p.id === id);
+  if (!item) return;
+  const dispos = ['PRÉSENT','GARDE','CONGÉ','ABSENT'];
+  const cur = dispos.indexOf(item.dispo);
+  item.dispo = dispos[(cur + 1) % dispos.length];
+  LS.set('personnel', list);
+  renderPersonnel();
+  notify(`${item.grade} ${item.nom} → ${item.dispo}`);
+}
+function deletePers(id) {
+  if (!confirm('Supprimer ce militaire ?')) return;
+  LS.set('personnel', (LS.get('personnel')||[]).filter(p => p.id !== id));
+  renderPersonnel();
+}
+
+// ═══════════════════════════════════════════
+//  VEHICULES
+// ═══════════════════════════════════════════
+function saveVehicule() {
+  const id = nextId('vh');
+  const entry = {
+    id,
+    immat: document.getElementById('vh-immat').value.toUpperCase(),
+    modele: document.getElementById('vh-modele').value,
+    type: document.getElementById('vh-type').value,
+    affecte: document.getElementById('vh-affecte').value,
+    km: document.getElementById('vh-km').value,
+    ct: document.getElementById('vh-ct').value,
+    etat: document.getElementById('vh-etat').value,
+  };
+  const list = LS.get('vehicules') || [];
+  list.push(entry);
+  LS.set('vehicules', list);
+  addLog('VEHICULE', `Ajout véhicule: ${entry.immat} — ${entry.modele}`);
+  closeModal('modal-vehicule');
+  renderVehicules();
+  notify('✓ Véhicule enregistré');
+}
+
+function renderVehicules() {
+  const tbody = document.getElementById('vh-tbody');
+  if (!tbody) return;
+  const list = LS.get('vehicules') || [];
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:20px;">Aucun véhicule enregistré</td></tr>'; return; }
+  tbody.innerHTML = list.map(v => `<tr>
+    <td class="mono" style="color:var(--gold);font-weight:700">${v.immat}</td>
+    <td>${v.modele}</td>
+    <td><span class="badge badge-blue">${v.type}</span></td>
+    <td>${v.affecte||'—'}</td>
+    <td class="mono">${Number(v.km).toLocaleString('fr-FR')} km</td>
+    <td>${fmtDate(v.ct)}</td>
+    <td>${statusBadge(v.etat)}</td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="cycleVhEtat(${v.id})">✎ État</button>
+      ${currentUser.role==='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteVh(${v.id})">✕</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+function cycleVhEtat(id) {
+  const list = LS.get('vehicules') || [];
+  const item = list.find(v => v.id === id);
+  if (!item) return;
+  const etats = ['DISPONIBLE','EN SERVICE','EN MAINTENANCE','HORS SERVICE'];
+  const cur = etats.indexOf(item.etat);
+  item.etat = etats[(cur + 1) % etats.length];
+  LS.set('vehicules', list);
+  renderVehicules();
+  notify(`${item.immat} → ${item.etat}`);
+}
+function deleteVh(id) {
+  if (!confirm('Supprimer ce véhicule ?')) return;
+  LS.set('vehicules', (LS.get('vehicules')||[]).filter(v => v.id !== id));
+  renderVehicules();
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN — USERS
+// ═══════════════════════════════════════════
+function saveUser() {
+  if (currentUser.role !== 'admin') { notify('Accès refusé', 'error'); return; }
+  const login = document.getElementById('u-login').value.trim();
+  const pass = document.getElementById('u-pass').value.trim();
+  if (!login || !pass) { notify('Identifiant et mot de passe requis', 'error'); return; }
+  const users = LS.get('users') || [];
+  if (users.find(u => u.login === login)) { notify('Cet identifiant existe déjà', 'error'); return; }
+  const id = nextId('user');
+  const entry = {
+    id, login, pass,
+    grade: document.getElementById('u-grade').value,
+    nom: document.getElementById('u-nom').value.toUpperCase(),
+    prenom: document.getElementById('u-prenom').value,
+    role: document.getElementById('u-role').value,
+    unite: document.getElementById('u-unite').value,
+    statut: document.getElementById('u-statut').value,
+    lastAccess: '',
+  };
+  users.push(entry);
+  LS.set('users', users);
+  addLog('COMPTE', `Création compte: ${login} (${entry.role})`);
+  closeModal('modal-user');
+  renderAdminUsers();
+  notify(`✓ Compte "${login}" créé`);
+}
+
+function renderAdminUsers() {
+  if (currentUser.role !== 'admin') return;
+  document.getElementById('admin-access-check').style.display = 'none';
+  document.getElementById('admin-users-content').style.display = '';
+  const tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  const users = LS.get('users') || [];
+  tbody.innerHTML = users.map(u => `<tr>
+    <td class="mono">${u.login}</td>
+    <td><strong>${u.grade}</strong> ${u.nom} ${u.prenom}</td>
+    <td><span class="role-badge ${u.role}" style="font-size:10px;padding:2px 8px;border:1px solid;">${u.role.toUpperCase()}</span></td>
+    <td style="font-size:11px">${u.unite||'—'}</td>
+    <td style="font-size:11px">${u.lastAccess||'Jamais'}</td>
+    <td>${statusBadge(u.statut)}</td>
+    <td>
+      <button class="btn btn-outline btn-sm" onclick="toggleUserStatut(${u.id})">${u.statut==='ACTIF'?'⛔ Suspendre':'✓ Activer'}</button>
+      ${u.id !== currentUser.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">✕</button>` : '<span style="font-size:10px;color:var(--text-dim)">moi</span>'}
+    </td>
+  </tr>`).join('');
+}
+
+function toggleUserStatut(id) {
+  if (id === currentUser.id) { notify('Impossible de modifier votre propre compte', 'error'); return; }
+  const users = LS.get('users') || [];
+  const item = users.find(u => u.id === id);
+  if (!item) return;
+  item.statut = item.statut === 'ACTIF' ? 'SUSPENDU' : 'ACTIF';
+  LS.set('users', users);
+  addLog('COMPTE', `${item.statut}: compte ${item.login}`);
+  renderAdminUsers();
+  notify(`Compte ${item.login} → ${item.statut}`);
+}
+function deleteUser(id) {
+  if (id === currentUser.id) { notify('Impossible de supprimer votre propre compte', 'error'); return; }
+  if (!confirm('Supprimer ce compte ?')) return;
+  LS.set('users', (LS.get('users')||[]).filter(u => u.id !== id));
+  addLog('COMPTE', `Suppression compte ID ${id}`);
+  renderAdminUsers();
+}
+
+// ═══════════════════════════════════════════
+//  LOGS
+// ═══════════════════════════════════════════
+function renderLogs() {
+  if (currentUser.role !== 'admin') return;
+  const tbody = document.getElementById('logs-tbody');
+  if (!tbody) return;
+  const logs = LS.get('logs') || [];
+  if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px;">Journal vide</td></tr>'; return; }
+  tbody.innerHTML = logs.map(l => `<tr>
+    <td class="mono" style="font-size:11px;white-space:nowrap">${l.ts}</td>
+    <td class="mono">${l.user||'—'}</td>
+    <td><span class="badge badge-blue">${l.action}</span></td>
+    <td style="font-size:11px">${l.details||'—'}</td>
+    <td class="mono" style="font-size:11px;color:var(--text-dim)">${l.ip||'—'}</td>
+  </tr>`).join('');
+}
+
+function clearLogs() {
+  if (!confirm('Vider les journaux système ?')) return;
+  LS.set('logs', []);
+  renderLogs();
+  notify('Journal système vidé');
+}
+
+// ═══════════════════════════════════════════
+//  SYNCHRONISATION MULTI-POSTES
+//  BroadcastChannel = même navigateur (onglets)
+//  Firebase onSnapshot = tous les postes réseau
+// ═══════════════════════════════════════════
+const SYNC_CHANNEL = new BroadcastChannel('sigc_sync');
+const SYNC_KEYS = ['interventions','mc','gav','pv','vehicules','personnel','vacations','affectations','logs'];
+
+// BroadcastChannel : synchronisation entre onglets du même navigateur
+const _origLSset = LS.set.bind(LS);
+LS.set = function(key, val) {
+  _origLSset(key, val);
+  // Diffuser aux autres onglets (BroadcastChannel)
+  if (SYNC_KEYS.includes(key)) {
+    SYNC_CHANNEL.postMessage({ type: 'data_update', key, data: val, ts: Date.now(), user: currentUser?.login || '?' });
+  }
+};
+
+SYNC_CHANNEL.onmessage = (evt) => {
+  const { type, key, data } = evt.data;
+  if (type === 'data_update' && SYNC_KEYS.includes(key)) {
+    _cache[key] = data;
+    localStorage.setItem('sigc_'+key, JSON.stringify(data));
+    const refreshMap = {
+      'interventions': () => { renderInterventions(); updateBadges(); },
+      'mc':            () => { if(typeof renderMC==='function') renderMC(); updateBadges(); },
+      'gav':           renderGAV,
+      'pv':            renderPV,
+      'vehicules':     renderVehicules,
+      'personnel':     renderPersonnel,
+      'vacations':     renderVacations,
+      'affectations':  renderAffectations,
+      'logs':          renderLogs,
+    };
+    if (refreshMap[key]) refreshMap[key]();
+    refreshDashboard();
+    notify(`🔄 Sync — ${key} mis à jour (autre onglet)`, 'info');
+  }
+};
+
+// ═══════════════════════════════════════════
+//  EXPORT / IMPORT BASE DE DONNÉES
+// ═══════════════════════════════════════════
+function exportDB() {
+  const db = {};
+  const allKeys = [...SYNC_KEYS, 'users'];
+  allKeys.forEach(k => { db[k] = LS.get(k) || []; });
+  db._meta = { exported: new Date().toISOString(), version: '2.4.1-firebase', by: currentUser?.login };
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `SIGC_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  addLog('ADMIN', 'Export base de données SIGC');
+  notify('✓ Base de données exportée');
+}
+
+async function importDB() {
+  if (currentUser?.role !== 'admin') { notify('Accès refusé — Admin uniquement', 'error'); return; }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const db = JSON.parse(ev.target.result);
+        if (!confirm(`Importer la sauvegarde du ${db._meta?.exported?.slice(0,10) || '?'} ?\nTOUTES les données seront remplacées (local + Firebase si connecté).`)) return;
+        showLoadingOverlay('Import en cours...');
+        for (const [k, v] of Object.entries(db)) {
+          if (k !== '_meta') {
+            _cache[k] = v;
+            localStorage.setItem('sigc_'+k, JSON.stringify(v));
+            if (window.FIREBASE_READY) await FB.writeCollection(k, v);
+          }
+        }
+        addLog('ADMIN', `Import base de données: ${file.name}`);
+        hideLoadingOverlay();
+        notify('✓ Import réussi — rechargement...', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } catch(err) {
+        hideLoadingOverlay();
+        notify('Erreur de lecture du fichier JSON', 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ── Boutons Export/Import + statut Firebase dans la sidebar ──
+document.addEventListener('DOMContentLoaded', () => {
+  const footer = document.querySelector('.sidebar-footer');
+  if (footer) {
+    footer.innerHTML += `
+      <div id="fb-sidebar-status" style="margin-top:8px;padding:6px 8px;background:#eef1f7;border:1px solid #d0d9e8;font-size:10px;text-align:center;color:#4a5a7a;letter-spacing:0.5px;">
+        ⏳ Firebase...
+      </div>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:5px;">
+        <button onclick="exportDB()" style="background:#003189;color:#fff;border:none;padding:6px 8px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;width:100%">💾 EXPORTER BDD</button>
+        <button onclick="importDB()" style="background:none;border:1px solid #d0d9e8;color:#4a5a7a;padding:6px 8px;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;width:100%">📂 IMPORTER BDD</button>
+      </div>`;
+  }
+  // Mettre à jour le statut Firebase dans la sidebar
+  window.addEventListener('firebase-ready', () => {
+    const el = document.getElementById('fb-sidebar-status');
+    if (el) {
+      el.innerHTML = window.FIREBASE_READY
+        ? '🔥 <strong>Firebase actif</strong><br>Sync temps réel activée'
+        : '💾 Mode local uniquement<br>Configurez Firebase pour la sync réseau';
+      el.style.color = window.FIREBASE_READY ? '#1a7a4a' : '#c0392b';
+    }
+  });
+});
+
+// ─── INIT ASYNC ───
+initData();
+</script>
+</body>
+</html>
