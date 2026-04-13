@@ -2268,34 +2268,41 @@ async function doLogin() {
   if (!loginVal || !passVal) return;
 
   document.getElementById('login-error').style.display = 'none';
-  showLoadingOverlay('Authentification en cours...');
+  showLoadingOverlay('Vérification des accès...');
 
-  // ══════════════════════════════════════════
-  //  Récupérer la liste des comptes depuis
-  //  Firestore EN PRIORITÉ, sinon localStorage
-  // ══════════════════════════════════════════
+  // ── Attendre que Firebase soit prêt (max 5 secondes) ──
+  if (!window.FIREBASE_READY) {
+    await new Promise(resolve => {
+      if (window.FIREBASE_READY) return resolve();
+      const handler = () => resolve();
+      window.addEventListener('firebase-ready', handler, { once: true });
+      setTimeout(resolve, 5000); // timeout 5s
+    });
+  }
+
+  // ── Lire les comptes depuis Firestore EN PRIORITÉ ──
   let users = [];
   if (window.FIREBASE_READY) {
     try {
       const fbUsers = await FB.readCollection('users');
       if (fbUsers && fbUsers.length > 0) {
         users = fbUsers;
-        // Mettre à jour le cache local
         _cache['users'] = users;
         localStorage.setItem('sigc_users', JSON.stringify(users));
-      } else {
-        users = JSON.parse(localStorage.getItem('sigc_users') || '[]');
       }
     } catch(e) {
-      users = JSON.parse(localStorage.getItem('sigc_users') || '[]');
+      console.warn('[SIGC] Erreur lecture Firestore:', e.message);
     }
-  } else {
+  }
+
+  // ── Fallback localStorage si Firestore vide ou indisponible ──
+  if (users.length === 0) {
     users = JSON.parse(localStorage.getItem('sigc_users') || '[]');
   }
 
-  // ── Connexion par identifiant SIGC + mot de passe ──
+  // ── Chercher le compte par identifiant + mot de passe ──
   const user = users.find(u =>
-    (u.login === loginVal || u.email === loginVal) &&
+    u.login === loginVal &&
     u.pass === passVal &&
     u.statut === 'ACTIF'
   );
@@ -3385,8 +3392,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ─── INIT ASYNC ───
-(async () => { await initData(); })();
+// ─── INIT — attendre Firebase avant de démarrer ───
+function _startInit() {
+  (async () => { await initData(); })();
+}
+
+// Si Firebase est déjà prêt (cas rare), démarrer directement
+// Sinon attendre l'événement firebase-ready
+if (window.__FB) {
+  _startInit();
+} else {
+  window.addEventListener('firebase-ready', _startInit, { once: true });
+  // Sécurité : démarrer quand même après 3 secondes si Firebase ne répond pas
+  setTimeout(() => {
+    if (!window.__FB) _startInit();
+  }, 3000);
+}
 </script>
 </body>
 </html>
