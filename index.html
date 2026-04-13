@@ -2149,49 +2149,80 @@ const FB = {
 
 // ─── INIT DATA (Firebase + localStorage fallback) ───
 async function initData() {
-  // Afficher un écran de chargement
   showLoadingOverlay('Chargement des données...');
 
-  if (window.FIREBASE_READY) {
-    try {
-      await FB.loadAll();
-      notify('🔥 Données chargées depuis Firebase', 'success');
-    } catch(e) {
-      console.warn('[SIGC] Erreur chargement Firebase, fallback localStorage');
-    }
+  // ── Toujours créer les comptes par défaut en localStorage d'abord ──
+  // Cela garantit que la connexion locale fonctionne même sans Firebase
+  const usersDefaut = [
+    { id:1, login:'admin', pass:'Admin@2024', grade:'COL', nom:'DUPONT', prenom:'Jean', role:'admin', unite:'Compagnie', statut:'ACTIF', lastAccess:'' },
+    { id:2, login:'corg', pass:'Corg@2024', grade:'ADJ-CH', nom:'MARTIN', prenom:'Sophie', role:'corg', unite:'CORG', statut:'ACTIF', lastAccess:'' },
+    { id:3, login:'pam', pass:'Pam@2024', grade:'ADJ', nom:'BERNARD', prenom:'Luc', role:'pam', unite:'Brigade', statut:'ACTIF', lastAccess:'' },
+  ];
+
+  // Forcer l'écriture des users par défaut dans localStorage si vide
+  const usersExistants = JSON.parse(localStorage.getItem('sigc_users') || '[]');
+  if (!usersExistants || usersExistants.length === 0) {
+    localStorage.setItem('sigc_users', JSON.stringify(usersDefaut));
+    _cache['users'] = usersDefaut;
+  } else {
+    _cache['users'] = usersExistants;
   }
 
-  // Données par défaut si rien n'existe
-  if (!LS.get('users')) {
-    LS.set('users', [
-      { id:1, login:'admin', pass:'Admin@2024', grade:'COL', nom:'DUPONT', prenom:'Jean', role:'admin', unite:'Compagnie de Saumur', statut:'ACTIF', lastAccess:'' },
-      { id:2, login:'corg', pass:'Corg@2024', grade:'ADJ-CH', nom:'MARTIN', prenom:'Sophie', role:'corg', unite:'CORG — Groupement', statut:'ACTIF', lastAccess:'' },
-      { id:3, login:'pam', pass:'Pam@2024', grade:'ADJ', nom:'BERNARD', prenom:'Luc', role:'pam', unite:'Brigade de Doué-la-Fontaine', statut:'ACTIF', lastAccess:'' },
-    ]);
-  }
-  if (!LS.get('mc')) LS.set('mc', []);
-  if (!LS.get('vacations')) LS.set('vacations', []);
-  if (!LS.get('affectations')) LS.set('affectations', []);
-  if (!LS.get('interventions')) LS.set('interventions', []);
-  if (!LS.get('gav')) LS.set('gav', []);
-  if (!LS.get('pv')) LS.set('pv', []);
-  if (!LS.get('personnel')) {
-    LS.set('personnel', [
-      { id:1, matricule:'2019-012', grade:'ADJ', nom:'MARTIN', prenom:'Jean-Pierre', unite:'Brigade de Doué-la-Fontaine', fonction:'Chef de brigade', qual:'OPJ', dispo:'PRÉSENT' },
-      { id:2, matricule:'2020-031', grade:'GND-CH', nom:'DUPONT', prenom:'Marie', unite:'Brigade de Doué-la-Fontaine', fonction:'Enquêteur', qual:'APJ', dispo:'PRÉSENT' },
+  // ── Initialiser toutes les autres collections vides ──
+  const vides = ['mc','vacations','affectations','interventions','gav','pv','logs'];
+  vides.forEach(k => {
+    if (!localStorage.getItem('sigc_'+k)) {
+      localStorage.setItem('sigc_'+k, '[]');
+      _cache[k] = [];
+    } else {
+      _cache[k] = JSON.parse(localStorage.getItem('sigc_'+k) || '[]');
+    }
+  });
+
+  if (!localStorage.getItem('sigc_personnel')) {
+    const pers = [
+      { id:1, matricule:'2019-012', grade:'ADJ', nom:'MARTIN', prenom:'Jean-Pierre', unite:'Brigade', fonction:'Chef de brigade', qual:'OPJ', dispo:'PRÉSENT' },
+      { id:2, matricule:'2020-031', grade:'GND-CH', nom:'DUPONT', prenom:'Marie', unite:'Brigade', fonction:'Enquêteur', qual:'APJ', dispo:'PRÉSENT' },
       { id:3, matricule:'2021-008', grade:'GND', nom:'LEFEBVRE', prenom:'Thomas', unite:'PSIG', fonction:'Cavalier PSIG', qual:'APJa', dispo:'GARDE' },
       { id:4, matricule:'2018-044', grade:'ADJ-CH', nom:'ROUSSEAU', prenom:'Claire', unite:'PPGN', fonction:'Chef de groupe', qual:'OPJ / APJ', dispo:'CONGÉ' },
-    ]);
+    ];
+    localStorage.setItem('sigc_personnel', JSON.stringify(pers));
+    _cache['personnel'] = pers;
+  } else {
+    _cache['personnel'] = JSON.parse(localStorage.getItem('sigc_personnel') || '[]');
   }
-  if (!LS.get('vehicules')) {
-    LS.set('vehicules', [
-      { id:1, immat:'GN-001-AA', modele:'Peugeot 3008', type:'VTU', affecte:'Brigade de Doué-la-Fontaine', km:87432, ct:'2025-06-15', etat:'DISPONIBLE' },
+
+  if (!localStorage.getItem('sigc_vehicules')) {
+    const vh = [
+      { id:1, immat:'GN-001-AA', modele:'Peugeot 3008', type:'VTU', affecte:'Brigade', km:87432, ct:'2025-06-15', etat:'DISPONIBLE' },
       { id:2, immat:'GN-002-AA', modele:'Renault Duster', type:'4X4', affecte:'PSIG', km:124600, ct:'2024-12-01', etat:'EN SERVICE' },
       { id:3, immat:'GN-003-AA', modele:'BMW R1250RT', type:'MOTO', affecte:'Brigade motorisée', km:43210, ct:'2025-03-20', etat:'EN MAINTENANCE' },
-    ]);
+    ];
+    localStorage.setItem('sigc_vehicules', JSON.stringify(vh));
+    _cache['vehicules'] = vh;
+  } else {
+    _cache['vehicules'] = JSON.parse(localStorage.getItem('sigc_vehicules') || '[]');
   }
-  if (!LS.get('logs')) LS.set('logs', []);
-  if (!LS.get('idcounters')) LS.set('idcounters', { mc:100, vac:1, aff:1, int:100, gav:1, pv:2024001, pers:100, vh:1, user:4 });
+
+  if (!localStorage.getItem('sigc_idcounters')) {
+    const ctr = { mc:100, vac:1, aff:1, int:100, gav:1, pv:2024001, pers:100, vh:1, user:4 };
+    localStorage.setItem('sigc_idcounters', JSON.stringify(ctr));
+    _cache['idcounters'] = ctr;
+  } else {
+    _cache['idcounters'] = JSON.parse(localStorage.getItem('sigc_idcounters') || '{}');
+  }
+
+  // ── Ensuite charger depuis Firebase si disponible (écrase le local) ──
+  if (window.FIREBASE_READY) {
+    try {
+      showLoadingOverlay('Synchronisation Firebase...');
+      await FB.loadAll();
+      notify('🔥 Données synchronisées depuis Firebase', 'success');
+    } catch(e) {
+      console.warn('[SIGC] Firebase non disponible, mode local actif');
+      notify('⚠️ Mode local — Firebase non disponible', 'error');
+    }
+  }
 
   hideLoadingOverlay();
 }
@@ -3409,7 +3440,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── INIT ASYNC ───
-initData();
+(async () => { await initData(); })();
 </script>
 </body>
 </html>
